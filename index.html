@@ -1824,7 +1824,7 @@
       </div>
     </header>
 
-    <main class="fx-container">
+    <main class="fx-container" id="fx-main">
 
       <section class="fx-tab active" id="tab-cronograma">
         <div class="fx-hero" id="fx-hero"></div>
@@ -2150,7 +2150,7 @@
   const FX_STORAGE_PREFIX = 'fractalvox:';
   const FX_PUBLIC_KEYS = [
     'sponsored', 'watched', 'games', 'schedule', 'platforms', 'hero', 'socials', 'tabVisibility',
-    'scheduleWeekAnchor', 'tabOrder', 'templates', 'quick'
+    'scheduleWeekAnchor', 'tabOrder', 'templates', 'quick', 'customTabs'
   ];
   const FX_PRIVATE_KEYS = ['content'];
 
@@ -2219,6 +2219,19 @@
         fxRenderWatchedFilters();
         fxRenderGamesFilters();
         break;
+      case 'customTabs':
+        // Uma aba pode ter sido criada ou apagada em outro navegador/celular:
+        // garante que as sections existam pras abas atuais e some com a
+        // section de qualquer aba que não exista mais.
+        fxMountAllCustomTabs();
+        document.querySelectorAll('.fx-tab[id^="tab-tab_"]').forEach(sec => {
+          const id = sec.id.slice(4);
+          if (!fxCustomTabIds().includes(id)) sec.remove();
+        });
+        fxRenderNav();
+        break;
+      default:
+        if (fxCustomTabIds().includes(key)) fxRenderGrid(key);
     }
   }
 
@@ -2274,9 +2287,21 @@
     }
     if (!state.tabVisibility) state.tabVisibility = {};
     if (!state.quick) state.quick = [];
-    if (!state.tabOrder || !state.tabOrder.length) state.tabOrder = TABS.map(t => t.id);
+    if (!state.customTabs) state.customTabs = [];
+    // Fallback só usado quando o Supabase não respondeu: os arrays de cards
+    // das abas personalizadas usam uma chave dinâmica (o id da aba), então
+    // não estão em FX_PUBLIC_KEYS e precisam ser resgatados do cache local
+    // à parte, um por um.
+    state.customTabs.forEach(t => {
+      if (!state[t.id]) {
+        const local = fxLocalGet(t.id);
+        state[t.id] = local != null ? local : [];
+      }
+    });
+    if (!state.tabOrder || !state.tabOrder.length) state.tabOrder = fxAllTabDefs().map(t => t.id);
     if (!state.templates) state.templates = fxCloneDefaultTemplates();
 
+    fxMountAllCustomTabs();
     fxCheckWeekRollover();
     fxApplyAdminUI();
     fxRenderNav();
@@ -2288,7 +2313,7 @@
     fxRenderSocials();
     fxInitFilterPanels();
     fxInitDragDrop();
-    ['sponsored', 'watched', 'games', 'content'].forEach(fxRenderGrid);
+    ['sponsored', 'watched', 'games', 'content', ...fxCustomTabIds()].forEach(fxRenderGrid);
     fxSetContentView(fxLocalGet('content-view') || 'grid');
     setInterval(fxRenderHero, 1000);
     setInterval(() => {
@@ -2353,7 +2378,12 @@
     fxRenderNav();
     fxRenderSocials();
     fxRenderAllWeeks();
-    fxRenderContent();
+    /* Os 4 catálogos de cards (não só "content") também mudam de conteúdo
+       quando vira admin: é aí que aparece a alcinha de arrastar (pontinhos
+       fx-drag-handle) em cada card. Antes só "content" era redesenhado aqui,
+       então Patrocinados/Assistidos/Jogados ficavam sem alça de arraste até
+       um F5 — por isso não dava pra reordenar os cards dessas abas. */
+    ['sponsored', 'watched', 'games', 'content', ...fxCustomTabIds()].forEach(fxRenderGrid);
   }
 
   // Clique "secreto": 5 cliques rápidos no logo abrem a tela de login do admin.
@@ -2425,6 +2455,7 @@
               <p class="fx-modal-sinopse" style="margin-bottom:16px">Suas edições já são salvas direto no banco de dados e aparecem para todo mundo na hora — não é mais preciso publicar nada manualmente. Para trocar a senha de admin, use o painel do Supabase (Authentication → Users).</p>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <button class="fx-btn-ghost fx-btn" onclick="fxOpenTabVisibility()">Abas visíveis ao público</button>
+                <button class="fx-btn-ghost fx-btn" onclick="fxOpenNewTabForm()">+ Nova aba</button>
                 <button class="fx-btn-ghost fx-btn" onclick="fxOpenTemplateManager()">Templates de card</button>
                 <button class="fx-btn-ghost fx-btn" onclick="fxExportFullBackup()">Exportar backup completo (com Conteúdos)</button>
                 <button class="fx-btn-ghost fx-btn" onclick="document.getElementById('fx-import-input').click()">Importar dados de um arquivo (restaura no banco)</button>
@@ -2451,7 +2482,7 @@
   /** Backup completo (inclusive Conteúdos) para você mesmo guardar ou mover para outro navegador/computador. */
   function fxExportFullBackup() {
     const data = {};
-    [...FX_PUBLIC_KEYS, ...FX_PRIVATE_KEYS].forEach(k => data[k] = state[k]);
+    [...FX_PUBLIC_KEYS, ...FX_PRIVATE_KEYS, ...fxCustomTabIds()].forEach(k => data[k] = state[k]);
     const stamp = new Date().toISOString().slice(0, 10);
     fxDownloadJson(`fractalvox-backup-${stamp}.json`, data);
   }
@@ -2482,12 +2513,22 @@
           importedCount++;
         }
       });
+      // As abas personalizadas (customTabs, já importado acima) guardam os
+      // cards numa chave dinâmica por aba — importa cada uma também.
+      fxCustomTabIds().forEach(id => {
+        if (data[id] != null) {
+          state[id] = data[id];
+          fxSave(id);
+        }
+      });
+      fxMountAllCustomTabs();
       fxRenderHero();
       fxRenderAllWeeks();
       fxRenderWatchedFilters();
       fxRenderGamesFilters();
       fxRenderPlatformFilter();
-      ['sponsored', 'watched', 'games', 'content'].forEach(fxRenderGrid);
+      fxRenderNav();
+      ['sponsored', 'watched', 'games', 'content', ...fxCustomTabIds()].forEach(fxRenderGrid);
       fxOpenModal(`<div class="fx-modal-body">
               <h3 class="fx-modal-title">Importado com sucesso</h3>
               <p class="fx-modal-sinopse">${importedCount} categoria${importedCount === 1 ? '' : 's'} atualizada${importedCount === 1 ? '' : 's'} a partir do arquivo.</p>
@@ -2536,17 +2577,127 @@
     return !!(state.tabVisibility && state.tabVisibility[id]);
   }
 
+  /** As abas fixas (TABS) mais as abas que o admin criou (state.customTabs).
+      Usado em todo lugar que precisa "todas as abas que existem hoje". */
+  function fxAllTabDefs() {
+    return TABS.concat((state.customTabs || []).map(t => ({
+      id: t.id,
+      label: t.label,
+      custom: true
+    })));
+  }
+
+  function fxCustomTabIds() {
+    return (state.customTabs || []).map(t => t.id);
+  }
+
   /** Ordem das abas conforme state.tabOrder (editável arrastando, admin). Abas
       novas que ainda não estejam nessa lista (ex: depois de uma atualização
-      do site) aparecem no fim, sem precisar migrar nada. */
+      do site, ou uma aba personalizada recém-criada) aparecem no fim, sem
+      precisar migrar nada. */
   function fxOrderedTabs() {
-    const order = state.tabOrder && state.tabOrder.length ? state.tabOrder : TABS.map(t => t.id);
-    const byId = new Map(TABS.map(t => [t.id, t]));
+    const all = fxAllTabDefs();
+    const order = state.tabOrder && state.tabOrder.length ? state.tabOrder : all.map(t => t.id);
+    const byId = new Map(all.map(t => [t.id, t]));
     const ordered = order.map(id => byId.get(id)).filter(Boolean);
-    TABS.forEach(t => {
+    all.forEach(t => {
       if (!ordered.includes(t)) ordered.push(t);
     });
     return ordered;
+  }
+
+  /* ---------- Abas personalizadas (admin) ----------
+     Além das 6 abas fixas acima, o admin pode criar abas extras pelo painel
+     admin ("+ Nova aba"). Cada uma é um catálogo de cards genérico — reusa
+     o mesmo sistema de templates, formulário, card de detalhe e grid das
+     abas prontas (Patrocinados/Assistidos/Jogados). A lista de abas fica em
+     state.customTabs (chave "customTabs" no Supabase); os cards de cada
+     aba ficam em state[tab.id], salvos com a própria chave, do mesmo jeito
+     que sponsored/watched/games. */
+  function fxCustomTabSectionHtml(tab) {
+    return `<section class="fx-tab" id="tab-${tab.id}">
+        <div class="fx-section-toolbar">
+          <div><h2 class="fx-section-title">${esc(tab.label)}</h2></div>
+          <div class="fx-toolbar-right">
+            <input class="fx-input fx-search" autocomplete="off" placeholder="Buscar..." oninput="fxRenderGrid('${tab.id}')" id="search-${tab.id}">
+            <button class="fx-btn fx-admin-control" onclick="fxOpenForm('${tab.id}')">+ Adicionar</button>
+          </div>
+        </div>
+        <div class="fx-grid" id="grid-${tab.id}" data-drag-container data-drag-group="cat-${tab.id}"></div>
+        <button class="fx-modal-danger-link fx-admin-control" style="margin-top:18px;display:inline-block" onclick="fxDeleteCustomTab('${tab.id}')">Excluir esta aba e todos os cards dela</button>
+      </section>`;
+  }
+
+  /** Cria a section no DOM (se ainda não existir) e registra o handler de
+      drag-and-drop dos cards dessa aba — o mesmo que sponsored/watched/games
+      ganham no carregamento. Chamada pra cada aba já existente ao carregar
+      a página, e de novo ao criar uma aba nova. */
+  function fxMountCustomTab(tab) {
+    if (!document.getElementById('tab-' + tab.id)) {
+      document.getElementById('fx-main').insertAdjacentHTML('beforeend', fxCustomTabSectionHtml(tab));
+    }
+    if (!state[tab.id]) state[tab.id] = [];
+    FX_DRAG_HANDLERS['cat-' + tab.id] = ({
+      toContainer
+    }) => {
+      const newOrder = fxContainerIds(toContainer);
+      const idSet = new Set(newOrder);
+      const byId = new Map(state[tab.id].map(it => [it.id, it]));
+      let ptr = 0;
+      state[tab.id] = state[tab.id].map(it => idSet.has(it.id) ? byId.get(newOrder[ptr++]) : it);
+      fxSave(tab.id);
+      fxRenderGrid(tab.id);
+    };
+  }
+
+  function fxMountAllCustomTabs() {
+    (state.customTabs || []).forEach(fxMountCustomTab);
+  }
+
+  function fxOpenNewTabForm() {
+    fxOpenModal(`<div class="fx-modal-body">
+              <h3 class="fx-modal-title">Nova aba</h3>
+              <p class="fx-modal-sinopse" style="margin-bottom:14px">Cria uma aba nova com seu próprio catálogo de cards (título, imagem e descrição, iguais aos outros catálogos). Dá pra ajustar os campos depois em Templates de card.</p>
+              <div class="fx-form-full"><label class="fx-field-label">Nome da aba *</label><input class="fx-input" autocomplete="off" id="f-new-tab-label" placeholder="Ex: Colecionáveis"></div>
+              <div class="fx-modal-actions">
+                <button class="fx-btn" onclick="fxCreateCustomTab()">Criar aba</button>
+                <button class="fx-btn-ghost fx-btn" onclick="fxOpenAdminPanel()">Cancelar</button>
+              </div>
+            </div>`, 'nova_aba.tmp');
+  }
+
+  function fxCreateCustomTab() {
+    const input = document.getElementById('f-new-tab-label');
+    const label = ((input && input.value) || '').trim();
+    if (!label) return;
+    const tab = {
+      id: 'tab_' + uid(),
+      label
+    };
+    if (!state.customTabs) state.customTabs = [];
+    state.customTabs.push(tab);
+    state[tab.id] = [];
+    fxSave('customTabs');
+    fxSave(tab.id);
+    fxMountCustomTab(tab);
+    fxRenderNav();
+    fxCloseModal();
+    fxSwitchTab(tab.id);
+  }
+
+  function fxDeleteCustomTab(id) {
+    state.customTabs = (state.customTabs || []).filter(t => t.id !== id);
+    state.tabOrder = (state.tabOrder || []).filter(tid => tid !== id);
+    state[id] = [];
+    fxSave('customTabs');
+    fxSave('tabOrder');
+    fxSave(id);
+    delete FX_DRAG_HANDLERS['cat-' + id];
+    const section = document.getElementById('tab-' + id);
+    if (section) section.remove();
+    if (fxCurrentTab === id) fxSwitchTab('cronograma');
+    fxRenderNav();
+    fxCloseModal();
   }
 
   function fxRenderNav() {
@@ -2708,9 +2859,10 @@
     const visibleOrder = fxContainerIds(toContainer);
     const idSet = new Set(visibleOrder);
     let ptr = 0;
-    const current = state.tabOrder && state.tabOrder.length ? state.tabOrder : TABS.map(t => t.id);
+    const allTabs = fxAllTabDefs();
+    const current = state.tabOrder && state.tabOrder.length ? state.tabOrder : allTabs.map(t => t.id);
     const merged = current.map(id => idSet.has(id) ? visibleOrder[ptr++] : id);
-    TABS.forEach(t => {
+    allTabs.forEach(t => {
       if (!merged.includes(t.id)) merged.push(t.id);
     });
     state.tabOrder = merged;
@@ -2851,6 +3003,7 @@
     const grid = document.getElementById('grid-' + catalog);
     if (!grid) return;
 
+    if (!state[catalog]) state[catalog] = [];
     const searchEl = document.getElementById('search-' + catalog);
     const query = (searchEl ? searchEl.value : '').toLowerCase();
     let items = state[catalog].filter(i => i.title.toLowerCase().includes(query));
@@ -2915,21 +3068,37 @@
           onclick: `fxOpenDetail('games','${i.id}')`
         });
       }
-      // content
-      const plats = (i.platforms || []);
-      const tagsHtml = plats.slice(0, 2).map(p =>
-        `<span class="fx-badge" style="background:${fxPlatformColor(p)}22;color:${fxPlatformColor(p)}">${esc(p)}</span>`
-      ).join('');
+      if (catalog === 'content') {
+        const plats = (i.platforms || []);
+        const tagsHtml = plats.slice(0, 2).map(p =>
+          `<span class="fx-badge" style="background:${fxPlatformColor(p)}22;color:${fxPlatformColor(p)}">${esc(p)}</span>`
+        ).join('');
+        return fxPosterCard({
+          id: i.id,
+          img: i.image,
+          title: i.title,
+          sub: plats.join('  '),
+          filename: fxFakeFilename('content', i),
+          topLeftHtml: tagsHtml,
+          topRightHtml: fxBadge(i.status || 'Ideia', STATUS_COLORS[i.status] || '#8C7060'),
+          bodyRightHtml: i.notes ? `<span class="fx-board-note-icon" title="Tem anotação">${ICON.note}</span>` : '',
+          onclick: `fxOpenDetail('content','${i.id}')`
+        });
+      }
+      // Aba personalizada (criada pelo admin): card genérico guiado pelo
+      // template do catálogo — mostra como badge o primeiro campo de
+      // seleção preenchido, e como subtítulo o primeiro campo de texto.
+      const tpl = fxTemplateFor(catalog);
+      const badgeField = tpl.fields.find(f => f.type === 'select' && i[f.key]);
+      const subField = tpl.fields.find(f => (f.type === 'text' || f.type === 'date') && f.key !== 'title' && i[f.key]);
       return fxPosterCard({
         id: i.id,
         img: i.image,
         title: i.title,
-        sub: plats.join('  '),
-        filename: fxFakeFilename('content', i),
-        topLeftHtml: tagsHtml,
-        topRightHtml: fxBadge(i.status || 'Ideia', STATUS_COLORS[i.status] || '#8C7060'),
-        bodyRightHtml: i.notes ? `<span class="fx-board-note-icon" title="Tem anotação">${ICON.note}</span>` : '',
-        onclick: `fxOpenDetail('content','${i.id}')`
+        sub: subField ? i[subField.key] : '',
+        filename: fxFakeFilename(catalog, i),
+        topLeftHtml: badgeField ? fxBadge(i[badgeField.key], STATUS_COLORS[i[badgeField.key]] || fxPlatformColor(i[badgeField.key])) : '',
+        onclick: `fxOpenDetail('${catalog}','${i.id}')`
       });
     }).join('');
 
@@ -3199,7 +3368,7 @@
      Cada aba pode ficar oculta pro público (o admin sempre continua vendo
      todas, marcadas como "Oculta"). Guardado em state.tabVisibility. */
   function fxOpenTabVisibility() {
-    const rows = TABS.map(t => {
+    const rows = fxAllTabDefs().map(t => {
       const forcedAdmin = t.adminOnly ? ' <span style="color:var(--text-3);font-weight:400">(sempre só admin)</span>' : '';
       return `<label class="fx-toggle-row">
                 <span>${esc(t.label)}${forcedAdmin}</span>
@@ -3477,7 +3646,7 @@
         const tagColor = s.catalog === 'sponsored' ? '#E0A83E' : s.catalog === 'quick' ? '#E8967D' : (STATUS_COLORS[
           item.status] || '#7FA8C9');
         const tagText = s.catalog === 'sponsored' ? 'Em breve' : s.catalog === 'quick' ? '' : (s.catalog === 'games' ?
-          'Jogo' : (item.type || 'Assistido'));
+          'Jogo' : (item.type || (s.catalog === 'watched' ? 'Assistido' : fxTemplateFor(s.catalog).label)));
         const handle = isAdmin ?
           `<div class="fx-daycard-bar fx-drag-handle" onpointerdown="fxDragStart(event,this)"><span></span><span></span><span></span></div>` :
           `<div class="fx-daycard-bar"><span></span><span></span><span></span></div>`;
@@ -3534,9 +3703,10 @@
     });
     const body = document.getElementById('sched-body');
     if (mode === 'existing') {
-      const opts = ['sponsored', 'watched', 'games'].map(cat => {
-        const label = cat === 'sponsored' ? 'Patrocinados' : cat === 'watched' ? 'Assistidos' : 'Jogados';
-        const items = state[cat];
+      const opts = ['sponsored', 'watched', 'games', ...fxCustomTabIds()].map(cat => {
+        const label = cat === 'sponsored' ? 'Patrocinados' : cat === 'watched' ? 'Assistidos' : cat === 'games' ?
+          'Jogados' : fxTemplateFor(cat).label;
+        const items = state[cat] || [];
         if (!items.length) return '';
         return `<optgroup label="${label}">${items.map(i => `<option value="${cat}|${i.id}">${esc(i.title)}</option>`).join('')}</optgroup>`;
       }).join('');
@@ -3556,6 +3726,7 @@
                   <option value="sponsored">Patrocinados</option>
                   <option value="watched">Assistidos</option>
                   <option value="games">Jogados</option>
+                  ${fxCustomTabIds().map(id => `<option value="${id}">${esc(fxTemplateFor(id).label)}</option>`).join('')}
                 </select>
                 <div id="sched-new-fields"></div>`;
       fxSchedNewFields();
@@ -3921,10 +4092,36 @@
   function fxTemplateFor(catalog) {
     if (!state.templates) state.templates = fxCloneDefaultTemplates();
     if (!state.templates[catalog]) {
-      state.templates[catalog] = fxCloneDefaultTemplates()[catalog] || {
-        label: catalog,
-        fields: []
-      };
+      const known = fxCloneDefaultTemplates()[catalog];
+      if (known) {
+        state.templates[catalog] = known;
+      } else {
+        // Aba personalizada: sem template padrão fixo, então cai num
+        // template genérico (mesmo formato do "quick") pra o formulário
+        // e o card de detalhe funcionarem de primeira. Editável depois em
+        // Templates de card, como qualquer outro catálogo.
+        const customTab = (state.customTabs || []).find(t => t.id === catalog);
+        state.templates[catalog] = {
+          label: customTab ? customTab.label : catalog,
+          fields: [{
+            key: 'title',
+            type: 'text',
+            label: 'Título',
+            required: true,
+            core: true
+          }, {
+            key: 'image',
+            type: 'image',
+            label: 'Imagem',
+            core: true
+          }, {
+            key: 'sinopse',
+            type: 'textarea',
+            label: 'Descrição',
+            core: true
+          }]
+        };
+      }
     }
     return state.templates[catalog];
   }
@@ -4196,7 +4393,7 @@
   let fxTplEditingCatalog = null;
 
   function fxOpenTemplateManager() {
-    const cats = ['sponsored', 'watched', 'games', 'content', 'quick'];
+    const cats = ['sponsored', 'watched', 'games', 'content', 'quick', ...fxCustomTabIds()];
     const rows = cats.map(cat => {
       const tpl = fxTemplateFor(cat);
       return `<button class="fx-tpl-row" onclick="fxOpenTemplateEditor('${cat}')">
