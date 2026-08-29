@@ -2034,6 +2034,7 @@
           </div>
         </div>
         <div class="fx-grid" id="grid-sponsored" data-drag-container data-drag-group="cat-sponsored"></div>
+        <button class="fx-modal-danger-link fx-admin-control" style="margin-top:18px;display:inline-block" onclick="fxConfirmDeleteFixedTab('patrocinados')">Excluir esta aba e todos os cards dela</button>
       </section>
 
       <section class="fx-tab" id="tab-assistidos">
@@ -2055,6 +2056,7 @@
           </div>
         </div>
         <div class="fx-grid" id="grid-watched" data-drag-container data-drag-group="cat-watched"></div>
+        <button class="fx-modal-danger-link fx-admin-control" style="margin-top:18px;display:inline-block" onclick="fxConfirmDeleteFixedTab('assistidos')">Excluir esta aba e todos os cards dela</button>
       </section>
 
       <section class="fx-tab" id="tab-jogados">
@@ -2390,8 +2392,16 @@
   const FX_STORAGE_PREFIX = 'fractalvox:';
   const FX_PUBLIC_KEYS = [
     'sponsored', 'watched', 'games', 'schedule', 'platforms', 'hero', 'socials', 'tabVisibility',
-    'tabOrder', 'templates', 'quick', 'customTabs'
+    'tabOrder', 'templates', 'quick', 'customTabs', 'deletedTabs'
   ];
+
+  /** As únicas abas fixas que podem ser apagadas de vez (id da aba -> chave
+      dos dados dela). Cronograma, Jogados, Minhas Redes e Conteúdos
+      continuam sempre presentes. */
+  const FX_FIXED_DELETABLE = {
+    patrocinados: 'sponsored',
+    assistidos: 'watched'
+  };
   const FX_PRIVATE_KEYS = ['content'];
 
   function fxLocalGet(key) {
@@ -2470,6 +2480,16 @@
         });
         fxRenderNav();
         break;
+      case 'deletedTabs':
+        // Uma aba fixa (Patrocinados/Assistidos) pode ter sido apagada de
+        // vez em outro navegador/celular: some com a section aqui também.
+        (state.deletedTabs || []).forEach(id => {
+          const section = document.getElementById('tab-' + id);
+          if (section) section.remove();
+        });
+        if (fxCurrentTab && (state.deletedTabs || []).includes(fxCurrentTab)) fxSwitchTab('cronograma');
+        fxRenderNav();
+        break;
       default:
         if (fxCustomTabIds().includes(key)) fxRenderGrid(key);
     }
@@ -2528,6 +2548,14 @@
     if (!state.tabVisibility) state.tabVisibility = {};
     if (!state.quick) state.quick = [];
     if (!state.customTabs) state.customTabs = [];
+    if (!state.deletedTabs) state.deletedTabs = [];
+    // As sections de Patrocinados/Assistidos existem fixas no HTML da
+    // página; se a aba já foi apagada de vez antes, tira a section do DOM
+    // logo no carregamento (senão ela ficaria escondida mas presente).
+    state.deletedTabs.forEach(id => {
+      const section = document.getElementById('tab-' + id);
+      if (section) section.remove();
+    });
     // Fallback só usado quando o Supabase não respondeu: os arrays de cards
     // das abas personalizadas usam uma chave dinâmica (o id da aba), então
     // não estão em FX_PUBLIC_KEYS e precisam ser resgatados do cache local
@@ -2819,7 +2847,7 @@
   /** As abas fixas (TABS) mais as abas que o admin criou (state.customTabs).
       Usado em todo lugar que precisa "todas as abas que existem hoje". */
   function fxAllTabDefs() {
-    return TABS.concat((state.customTabs || []).map(t => ({
+    return TABS.filter(t => !(state.deletedTabs || []).includes(t.id)).concat((state.customTabs || []).map(t => ({
       id: t.id,
       label: t.label,
       custom: true
@@ -2959,6 +2987,44 @@
     fxSave('schedule');
     fxSave(id);
     delete FX_DRAG_HANDLERS['cat-' + id];
+    const section = document.getElementById('tab-' + id);
+    if (section) section.remove();
+    if (fxCurrentTab === id) fxSwitchTab('cronograma');
+    fxRenderNav();
+    fxRenderSchedule();
+    fxCloseModal();
+  }
+
+  /** Exclusão de vez de uma das (poucas) abas fixas que aceitam isso —
+      Patrocinados e Assistidos, ver FX_FIXED_DELETABLE. Diferente da aba
+      personalizada, a section continua existindo no HTML da página, então
+      além de apagar os dados a gente marca em state.deletedTabs (persistido)
+      pra ela nunca mais voltar a aparecer, em nenhum navegador. */
+  function fxConfirmDeleteFixedTab(id) {
+    const tabDef = TABS.find(t => t.id === id);
+    const dataKey = FX_FIXED_DELETABLE[id];
+    if (!tabDef || !dataKey) return;
+    const count = (state[dataKey] || []).length;
+    fxConfirmAction(
+      `Excluir a aba "${tabDef.label}"?`,
+      `Isso apaga a aba e ${count ? `${count} card${count===1?'':'s'} dela` : 'todos os cards dela'} pra sempre, em todos os navegadores — não dá pra desfazer.`,
+      'Sim, excluir',
+      `fxDeleteFixedTab('${id}')`
+    );
+  }
+
+  function fxDeleteFixedTab(id) {
+    const dataKey = FX_FIXED_DELETABLE[id];
+    if (!dataKey) return;
+    if (!state.deletedTabs) state.deletedTabs = [];
+    if (!state.deletedTabs.includes(id)) state.deletedTabs.push(id);
+    state.tabOrder = (state.tabOrder || []).filter(tid => tid !== id);
+    state.schedule = (state.schedule || []).filter(s => s.catalog !== dataKey);
+    state[dataKey] = [];
+    fxSave('deletedTabs');
+    fxSave('tabOrder');
+    fxSave('schedule');
+    fxSave(dataKey);
     const section = document.getElementById('tab-' + id);
     if (section) section.remove();
     if (fxCurrentTab === id) fxSwitchTab('cronograma');
@@ -3623,7 +3689,9 @@
       const forcedAdmin = t.adminOnly ? ' <span style="color:var(--text-3);font-weight:400">(sempre só admin)</span>' : '';
       const customBtns = t.custom ? `
                   <button class="fx-tab-mgr-btn" title="Renomear aba" onclick="fxOpenRenameTabForm('${t.id}')">${ICON.edit}</button>
-                  <button class="fx-tpl-remove-btn" title="Excluir aba" onclick="fxConfirmDeleteCustomTab('${t.id}')">${ICON.trash}</button>` : '';
+                  <button class="fx-tpl-remove-btn" title="Excluir aba" onclick="fxConfirmDeleteCustomTab('${t.id}')">${ICON.trash}</button>` :
+        (FX_FIXED_DELETABLE[t.id] ? `
+                  <button class="fx-tpl-remove-btn" title="Excluir aba" onclick="fxConfirmDeleteFixedTab('${t.id}')">${ICON.trash}</button>` : '');
       return `<label class="fx-toggle-row">
                 <span>${esc(t.label)}${forcedAdmin}</span>
                 <span class="fx-tab-mgr-controls">
@@ -3634,7 +3702,7 @@
     }).join('');
     fxOpenModal(`<div class="fx-modal-body">
               <h3 class="fx-modal-title">Gerenciar abas</h3>
-              <p class="fx-modal-sinopse" style="margin-bottom:14px">Desmarque uma aba pra escondê-la de quem visita o site (você continua vendo todas, marcadas como "Oculta"). Abas personalizadas também podem ser renomeadas ou excluídas por aqui.</p>
+              <p class="fx-modal-sinopse" style="margin-bottom:14px">Desmarque uma aba pra escondê-la de quem visita o site (você continua vendo todas, marcadas como "Oculta"). Abas personalizadas podem ser renomeadas ou excluídas por aqui; Patrocinados e Assistidos também podem ser excluídas (de vez, sem opção de renomear).</p>
               <div style="display:flex;flex-direction:column;gap:8px">${rows}</div>
               <div class="fx-modal-actions">
                 <button class="fx-btn-ghost fx-btn" onclick="fxOpenAdminPanel()">Voltar</button>
@@ -3684,6 +3752,7 @@
   function fxToggleFilterPanel(section) {
     const panel = document.getElementById('filter-panel-' + section);
     const toggle = document.getElementById('filter-toggle-' + section);
+    if (!panel || !toggle) return;
     const isOpen = panel.classList.toggle('open');
     toggle.classList.toggle('open', isOpen);
     fxLocalSet('filters-open-' + section, isOpen);
@@ -3692,9 +3761,11 @@
   function fxInitFilterPanels() {
     ['watched', 'games', 'content'].forEach(section => {
       const isOpen = fxLocalGet('filters-open-' + section) === true;
-      if (isOpen) {
-        document.getElementById('filter-panel-' + section).classList.add('open');
-        document.getElementById('filter-toggle-' + section).classList.add('open');
+      const panel = document.getElementById('filter-panel-' + section);
+      const toggle = document.getElementById('filter-toggle-' + section);
+      if (isOpen && panel && toggle) {
+        panel.classList.add('open');
+        toggle.classList.add('open');
       }
     });
   }
