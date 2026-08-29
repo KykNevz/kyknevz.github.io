@@ -317,6 +317,30 @@
     flex-shrink: 0;
   }
 
+  .fx-tab-mgr-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .fx-tab-mgr-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    cursor: pointer;
+  }
+
+  .fx-tab-mgr-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
   /* ---------- Layout ---------- */
   .fx-container {
     max-width: 1400px;
@@ -876,6 +900,30 @@
     flex-shrink: 0;
   }
 
+  .fx-hero-img.pick-vertical {
+    width: 110px;
+    aspect-ratio: 187/260;
+  }
+
+  .fx-hero-img.pick-horizontal {
+    width: 220px;
+    aspect-ratio: 16/9;
+  }
+
+  .fx-hero-img.pick-square {
+    width: 140px;
+    aspect-ratio: 1/1;
+  }
+
+  @media (max-width: 560px) {
+
+    .fx-hero-img.pick-horizontal,
+    .fx-hero-img.pick-square {
+      width: 100%;
+      max-width: 220px;
+    }
+  }
+
   .fx-hero-mid {
     flex: 1;
     min-width: 180px;
@@ -1009,90 +1057,229 @@
     border-color: var(--accent);
   }
 
-  /* ---------- Week grid ---------- */
-  .fx-week {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(150px, 1fr));
-    gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 4px;
+  /* Estado intermediário: passou do horário marcado mas ainda não confirmou
+     que a live realmente começou (checagem automática ou o admin na mão). */
+  .fx-hero-waiting {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
-  .fx-day-col {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    padding: 10px;
-    min-height: 140px;
-  }
-
-  .fx-day-col.today {
-    border-color: var(--accent);
-    background: rgba(232, 150, 125, 0.07);
-  }
-
-  .fx-day-head {
-    text-align: center;
-    padding-bottom: 8px;
-    margin-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-    position: relative;
-  }
-
-  .fx-day-name {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-2);
-    letter-spacing: 0.04em;
-  }
-
-  .fx-day-date {
-    font-size: 15px;
-    font-weight: 700;
-    margin-top: 2px;
-  }
-
-  .fx-day-today-tag {
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--accent);
+  .fx-hero-waiting-badge {
     background: rgba(232, 150, 125, 0.15);
-    padding: 2px 8px;
-    border-radius: 2px;
-    display: inline-block;
-    margin-top: 4px;
-    text-transform: uppercase;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    padding: 12px 16px;
+    letter-spacing: 0.03em;
+    animation: fxPulse 1s infinite;
   }
 
-  .fx-day-items {
+  /* ---------- Cronograma: cards de transmissão ---------- */
+  .fx-sched-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 14px;
   }
 
-  .fx-day-empty {
-    text-align: center;
-    color: var(--text-3);
-    font-size: 11.5px;
-    padding: 20px 4px;
+  .fx-sched-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    transition: border-color .2s ease, box-shadow .2s ease;
   }
 
-  .fx-day-add {
-    width: 100%;
-    margin-top: 8px;
-    background: none;
-    border: 1px dashed var(--border-strong);
-    color: var(--text-3);
-    border-radius: 2px;
-    padding: 7px;
-    font-size: 12px;
+  .fx-sched-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 24px var(--accent-glow) inset;
+  }
+
+  .fx-sched-card-body {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .fx-sched-card:nth-child(even) .fx-sched-card-body {
+    flex-direction: row-reverse;
+  }
+
+  .fx-sched-thumb {
+    flex: 0 0 260px;
+    min-width: 0;
+  }
+
+  .fx-sched-thumb .fx-daycard {
+    border: none;
+    height: 100%;
+  }
+
+  .fx-sched-thumb .fx-daycard:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .fx-sched-thumb .fx-daycard-imgwrap {
+    aspect-ratio: 4/3;
+    height: 100%;
+  }
+
+  .fx-sched-thumb-actions {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: flex;
+    gap: 4px;
+  }
+
+  .fx-sched-thumb-btn {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(11, 7, 6, 0.75);
+    border: 1px solid rgba(245, 232, 222, 0.25);
+    color: var(--text);
     cursor: pointer;
     font-family: inherit;
   }
 
-  .fx-day-add:hover {
+  .fx-sched-thumb-btn:hover {
     border-color: var(--accent);
     color: var(--accent);
+  }
+
+  .fx-sched-thumb-btn.danger:hover {
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .fx-sched-info {
+    flex: 1;
+    min-width: 0;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .fx-sched-eyebrow {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .fx-sched-title {
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 1.3;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .fx-sched-title:hover {
+    color: var(--accent);
+  }
+
+  .fx-sched-date {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .fx-sched-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  .fx-sched-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--text);
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .fx-sched-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .fx-sched-btn-twitch {
+    border-color: #8C6FD1;
+    color: #8C6FD1;
+  }
+
+  .fx-sched-btn-twitch:hover {
+    background: rgba(140, 111, 209, 0.12);
+  }
+
+  .fx-sched-btn-youtube {
+    border-color: #E24B4A;
+    color: #E24B4A;
+  }
+
+  .fx-sched-btn-youtube:hover {
+    background: rgba(226, 75, 74, 0.12);
+  }
+
+  .fx-sched-btn-pending {
+    border-style: dashed;
+    color: var(--text-3);
+    cursor: default;
+  }
+
+  .fx-sched-btn-pending:hover {
+    border-color: var(--border-strong);
+    color: var(--text-3);
+  }
+
+  .fx-sched-empty {
+    text-align: center;
+    color: var(--text-3);
+    padding: 60px 20px;
+    border: 1px dashed var(--border-strong);
+  }
+
+  .fx-sched-empty-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-2);
+    margin-bottom: 6px;
+  }
+
+  @media (max-width: 720px) {
+
+    .fx-sched-card-body,
+    .fx-sched-card:nth-child(even) .fx-sched-card-body {
+      flex-direction: column;
+    }
+
+    .fx-sched-thumb {
+      flex-basis: auto;
+    }
+
+    .fx-sched-thumb .fx-daycard-imgwrap {
+      aspect-ratio: 16/9;
+      height: auto;
+    }
   }
 
   .fx-daycard {
@@ -1152,17 +1339,6 @@
     background: linear-gradient(to top, rgba(11, 7, 6, 0.9), transparent 70%);
   }
 
-  .fx-daycard-title {
-    position: absolute;
-    left: 8px;
-    right: 8px;
-    bottom: 6px;
-    font-size: 11.5px;
-    font-weight: 700;
-    color: #fff;
-    line-height: 1.25;
-  }
-
   .fx-daycard-tag {
     position: absolute;
     top: 6px;
@@ -1172,25 +1348,6 @@
     padding: 2px 6px;
     text-transform: uppercase;
     border: 1px solid currentColor;
-  }
-
-  .fx-daycard-remove {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 18px;
-    height: 18px;
-    background: var(--red);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #1A0F0D;
-    opacity: 0;
-    transition: opacity .2s;
-  }
-
-  .fx-daycard:hover .fx-daycard-remove {
-    opacity: 1;
   }
 
   /* ---------- Modal ---------- */
@@ -1407,7 +1564,7 @@
   }
 
   /* Ação de excluir de vez fica visualmente separada e menos chamativa que
-       "Remover deste dia", pra reduzir o risco de clicar na errada. */
+       "Remover da agenda", pra reduzir o risco de clicar na errada. */
   .fx-modal-danger-link {
     display: block;
     width: 100%;
@@ -1497,6 +1654,37 @@
   .fx-form-grid .fx-select,
   .fx-form-grid textarea {
     width: 100%;
+  }
+
+  /* As 3 variações de imagem (vertical/horizontal/quadrada) lado a lado num
+     formulário — cada uma com seu campo de URL e upload de arquivo. */
+  .fx-image-variants {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .fx-image-variant {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 8px;
+  }
+
+  .fx-image-variant-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .fx-image-variant-file {
+    font-size: 11px;
+    padding: 5px;
   }
 
   .fx-platform-list {
@@ -1616,7 +1804,6 @@
     -webkit-user-select: none;
   }
 
-  body.fx-dragging-active .fx-day-empty,
   body.fx-dragging-active .fx-empty {
     display: none;
   }
@@ -1828,13 +2015,14 @@
 
       <section class="fx-tab active" id="tab-cronograma">
         <div class="fx-hero" id="fx-hero"></div>
-        <div class="fx-week" id="fx-week"></div>
-        <div class="fx-admin-control" id="fx-week-next-wrap" style="display:none;margin-top:28px">
-          <div class="fx-section-toolbar" style="margin-bottom:12px">
-            <div><h2 class="fx-section-title" style="font-size:16px">Semana seguinte</h2><p class="fx-section-sub">Visível só para você — planeje a próxima semana com antecedência</p></div>
+        <div class="fx-section-toolbar" style="margin-top:28px">
+          <div><h2 class="fx-section-title" style="font-size:16px">Próximas transmissões</h2><p class="fx-section-sub">Jogos e lives agendados — só os dias que realmente vão ter live</p></div>
+          <div class="fx-toolbar-right">
+            <div class="fx-chip-row" id="sched-filter"></div>
+            <button class="fx-btn fx-admin-control" onclick="fxOpenScheduleAdd()">+ Adicionar transmissão</button>
           </div>
-          <div class="fx-week" id="fx-week-next"></div>
         </div>
+        <div class="fx-sched-list" id="fx-sched-list"></div>
       </section>
 
       <section class="fx-tab" id="tab-patrocinados">
@@ -2079,7 +2267,6 @@
     socials: [],
     tabVisibility: {},
     hero: null,
-    scheduleWeekAnchor: null,
     tabOrder: null,
     templates: null,
     quick: []
@@ -2118,6 +2305,59 @@
     return `<img class="${imgClass}" src="${esc(url)}" onerror="fxOnImgError(this,'${phClass}')">`;
   }
 
+  /** Escolhe qual das 3 variações de imagem usar num lugar do site (abas de
+      cards preferem a vertical; Cronograma prefere a quadrada; o modal de
+      detalhe prefere a horizontal...), com fallback pras outras se a
+      preferida não estiver preenchida. Também aceita o formato antigo (uma
+      única URL em texto) e devolve ela direto, sem quebrar nada que ainda
+      não foi editado desde a atualização do site. */
+  function fxPickImage(images, pref) {
+    if (typeof images === 'string') return images;
+    images = images || {};
+    const order = pref === 'square' ? ['square', 'horizontal', 'vertical'] :
+      pref === 'horizontal' ? ['horizontal', 'square', 'vertical'] :
+      ['vertical', 'square', 'horizontal'];
+    for (const k of order) if (images[k]) return images[k];
+    return '';
+  }
+
+  const FX_IMAGE_VARIANTS = [{
+    key: 'vertical',
+    label: 'Vertical (pôster)'
+  }, {
+    key: 'horizontal',
+    label: 'Horizontal (16:9)'
+  }, {
+    key: 'square',
+    label: 'Quadrada (1:1)'
+  }];
+
+  /** Bloco de formulário com as 3 variações de imagem (URL + upload de
+      arquivo cada), usado tanto pelo campo genérico de template ("image")
+      quanto pelo formulário da próxima live. Só uma delas já é suficiente —
+      o site escolhe a melhor disponível em cada lugar. */
+  function fxImageVariantsHtml(idPrefix, images) {
+    images = images || {};
+    return `<div class="fx-image-variants">${FX_IMAGE_VARIANTS.map(v => `
+              <div class="fx-image-variant">
+                <span class="fx-image-variant-label">${esc(v.label)}</span>
+                <input class="fx-input" autocomplete="off" id="${idPrefix}-${v.key}" value="${esc(images[v.key]||'')}" placeholder="URL da imagem">
+                <input type="file" accept="image/*" class="fx-input fx-image-variant-file" autocomplete="off" onchange="fxImageFileToInput(this,'${idPrefix}-${v.key}')">
+              </div>`).join('')}</div>`;
+  }
+
+  function fxImageVariantsValue(idPrefix) {
+    const get = k => {
+      const el = document.getElementById(idPrefix + '-' + k);
+      return el ? el.value.trim() : '';
+    };
+    return {
+      vertical: get('vertical'),
+      horizontal: get('horizontal'),
+      square: get('square')
+    };
+  }
+
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
@@ -2150,7 +2390,7 @@
   const FX_STORAGE_PREFIX = 'fractalvox:';
   const FX_PUBLIC_KEYS = [
     'sponsored', 'watched', 'games', 'schedule', 'platforms', 'hero', 'socials', 'tabVisibility',
-    'scheduleWeekAnchor', 'tabOrder', 'templates', 'quick', 'customTabs'
+    'tabOrder', 'templates', 'quick', 'customTabs'
   ];
   const FX_PRIVATE_KEYS = ['content'];
 
@@ -2184,7 +2424,7 @@
         fxRenderHero();
         break;
       case 'schedule':
-        fxRenderAllWeeks();
+        fxRenderSchedule();
         break;
       case 'platforms':
         fxRenderPlatformFilter();
@@ -2210,7 +2450,7 @@
         fxRenderGrid('content');
         break;
       case 'quick':
-        fxRenderAllWeeks();
+        fxRenderSchedule();
         break;
       case 'tabOrder':
         fxRenderNav();
@@ -2302,11 +2542,12 @@
     if (!state.templates) state.templates = fxCloneDefaultTemplates();
 
     fxMountAllCustomTabs();
-    fxCheckWeekRollover();
+    fxMigrateLegacySchedule();
     fxApplyAdminUI();
     fxRenderNav();
     fxRenderHero();
-    fxRenderAllWeeks();
+    fxRenderSchedule();
+    fxRenderSchedFilter();
     fxRenderWatchedFilters();
     fxRenderGamesFilters();
     fxRenderPlatformFilter();
@@ -2316,9 +2557,7 @@
     ['sponsored', 'watched', 'games', 'content', ...fxCustomTabIds()].forEach(fxRenderGrid);
     fxSetContentView(fxLocalGet('content-view') || 'grid');
     setInterval(fxRenderHero, 1000);
-    setInterval(() => {
-      if (fxCheckWeekRollover()) fxRenderAllWeeks();
-    }, 60000);
+    setInterval(fxRenderSchedule, 60000);
   }
 
   async function fxSave(key) {
@@ -2377,7 +2616,7 @@
     fxApplyAdminUI();
     fxRenderNav();
     fxRenderSocials();
-    fxRenderAllWeeks();
+    fxRenderSchedule();
     /* Os 4 catálogos de cards (não só "content") também mudam de conteúdo
        quando vira admin: é aí que aparece a alcinha de arrastar (pontinhos
        fx-drag-handle) em cada card. Antes só "content" era redesenhado aqui,
@@ -2454,7 +2693,7 @@
               <h3 class="fx-modal-title">Painel do administrador</h3>
               <p class="fx-modal-sinopse" style="margin-bottom:16px">Suas edições já são salvas direto no banco de dados e aparecem para todo mundo na hora — não é mais preciso publicar nada manualmente. Para trocar a senha de admin, use o painel do Supabase (Authentication → Users).</p>
               <div style="display:flex;flex-direction:column;gap:8px">
-                <button class="fx-btn-ghost fx-btn" onclick="fxOpenTabVisibility()">Abas visíveis ao público</button>
+                <button class="fx-btn-ghost fx-btn" onclick="fxOpenTabManager()">Gerenciar abas</button>
                 <button class="fx-btn-ghost fx-btn" onclick="fxOpenNewTabForm()">+ Nova aba</button>
                 <button class="fx-btn-ghost fx-btn" onclick="fxOpenTemplateManager()">Templates de card</button>
                 <button class="fx-btn-ghost fx-btn" onclick="fxExportFullBackup()">Exportar backup completo (com Conteúdos)</button>
@@ -2523,7 +2762,7 @@
       });
       fxMountAllCustomTabs();
       fxRenderHero();
-      fxRenderAllWeeks();
+      fxRenderSchedule();
       fxRenderWatchedFilters();
       fxRenderGamesFilters();
       fxRenderPlatformFilter();
@@ -2624,7 +2863,7 @@
           </div>
         </div>
         <div class="fx-grid" id="grid-${tab.id}" data-drag-container data-drag-group="cat-${tab.id}"></div>
-        <button class="fx-modal-danger-link fx-admin-control" style="margin-top:18px;display:inline-block" onclick="fxDeleteCustomTab('${tab.id}')">Excluir esta aba e todos os cards dela</button>
+        <button class="fx-modal-danger-link fx-admin-control" style="margin-top:18px;display:inline-block" onclick="fxConfirmDeleteCustomTab('${tab.id}')">Excluir esta aba e todos os cards dela</button>
       </section>`;
   }
 
@@ -2685,18 +2924,46 @@
     fxSwitchTab(tab.id);
   }
 
+  /** Modal de confirmação genérico pra ações destrutivas (excluir aba, card,
+      rede social...). onConfirmJs é uma STRING com o JS a rodar se a pessoa
+      confirmar — mesmo padrão dos outros onclick inline do app. */
+  function fxConfirmAction(title, message, confirmLabel, onConfirmJs) {
+    fxOpenModal(`<div class="fx-modal-body">
+              <h3 class="fx-modal-title">${esc(title)}</h3>
+              <p class="fx-modal-sinopse">${esc(message)}</p>
+              <div class="fx-modal-actions">
+                <button class="fx-btn-danger fx-btn" onclick="${onConfirmJs}">${ICON.trash} ${esc(confirmLabel)}</button>
+                <button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Cancelar</button>
+              </div>
+            </div>`, 'confirmar.sys');
+  }
+
+  function fxConfirmDeleteCustomTab(id) {
+    const tab = (state.customTabs || []).find(t => t.id === id);
+    const count = (state[id] || []).length;
+    fxConfirmAction(
+      `Excluir a aba "${(tab && tab.label) || 'aba'}"?`,
+      `Isso apaga a aba e ${count ? `${count} card${count===1?'':'s'} dela` : 'todos os cards dela'} pra sempre — não dá pra desfazer.`,
+      'Sim, excluir',
+      `fxDeleteCustomTab('${id}')`
+    );
+  }
+
   function fxDeleteCustomTab(id) {
     state.customTabs = (state.customTabs || []).filter(t => t.id !== id);
     state.tabOrder = (state.tabOrder || []).filter(tid => tid !== id);
+    state.schedule = (state.schedule || []).filter(s => s.catalog !== id);
     state[id] = [];
     fxSave('customTabs');
     fxSave('tabOrder');
+    fxSave('schedule');
     fxSave(id);
     delete FX_DRAG_HANDLERS['cat-' + id];
     const section = document.getElementById('tab-' + id);
     if (section) section.remove();
     if (fxCurrentTab === id) fxSwitchTab('cronograma');
     fxRenderNav();
+    fxRenderSchedule();
     fxCloseModal();
   }
 
@@ -2870,36 +3137,6 @@
     fxRenderNav();
   };
 
-  FX_DRAG_HANDLERS['sched'] = ({
-    id,
-    toContainer,
-    fromContainer
-  }) => {
-    const day = toContainer.dataset.day;
-    const weekOffset = Number(toContainer.dataset.weekOffset);
-    const movedEntry = state.schedule.find(s => s.id === id);
-    if (!movedEntry) return;
-    movedEntry.day = day;
-    movedEntry.weekOffset = weekOffset;
-
-    const newOrderTo = fxContainerIds(toContainer);
-    let rest = state.schedule.filter(s => s.id !== id && !(s.day === day && (s.weekOffset || 0) === weekOffset));
-
-    if (fromContainer) {
-      const fromDay = fromContainer.dataset.day;
-      const fromWeek = Number(fromContainer.dataset.weekOffset);
-      const newOrderFrom = fxContainerIds(fromContainer);
-      rest = rest.filter(s => !(s.day === fromDay && (s.weekOffset || 0) === fromWeek));
-      rest = rest.concat(newOrderFrom.map(oid => state.schedule.find(s => s.id === oid)).filter(Boolean));
-    }
-
-    const reorderedTo = newOrderTo.map(oid => oid === id ? movedEntry : state.schedule.find(s => s.id === oid))
-      .filter(Boolean);
-    state.schedule = rest.concat(reorderedTo);
-    fxSave('schedule');
-    fxRenderAllWeeks();
-  };
-
   FX_DRAG_HANDLERS['socials'] = ({
     toContainer
   }) => {
@@ -3033,7 +3270,7 @@
           (i.year ? `<span class="fx-badge" style="background:#0008;color:#fff">${esc(i.year)}</span>` : '');
         return fxPosterCard({
           id: i.id,
-          img: i.image,
+          img: fxPickImage(i.image, 'vertical'),
           title: i.title,
           sub: i.type,
           filename: fxFakeFilename('sponsored', i),
@@ -3048,7 +3285,7 @@
           `<span class="fx-badge" style="background:#0008;color:#fff">Ep ${i.episode||0}/${i.totalEpisodes}</span>`;
         return fxPosterCard({
           id: i.id,
-          img: i.image,
+          img: fxPickImage(i.image, 'vertical'),
           title: i.title,
           sub: i.type,
           filename: fxFakeFilename('watched', i),
@@ -3060,7 +3297,7 @@
       if (catalog === 'games') {
         return fxPosterCard({
           id: i.id,
-          img: i.image,
+          img: fxPickImage(i.image, 'vertical'),
           title: i.title,
           sub: i.year ? 'Lançado em ' + i.year : '',
           filename: fxFakeFilename('games', i),
@@ -3075,7 +3312,7 @@
         ).join('');
         return fxPosterCard({
           id: i.id,
-          img: i.image,
+          img: fxPickImage(i.image, 'vertical'),
           title: i.title,
           sub: plats.join('  '),
           filename: fxFakeFilename('content', i),
@@ -3093,7 +3330,7 @@
       const subField = tpl.fields.find(f => (f.type === 'text' || f.type === 'date') && f.key !== 'title' && i[f.key]);
       return fxPosterCard({
         id: i.id,
-        img: i.image,
+        img: fxPickImage(i.image, 'vertical'),
         title: i.title,
         sub: subField ? i[subField.key] : '',
         filename: fxFakeFilename(catalog, i),
@@ -3189,6 +3426,9 @@
     },
     content: {
       platform: ''
+    },
+    schedule: {
+      filter: 'Anteriores'
     }
   };
 
@@ -3298,7 +3538,7 @@
               </div>
               <div class="fx-modal-actions">
                 <button class="fx-btn-ghost fx-btn" onclick="fxToggleSocialHidden('${d.id}')">${d.hidden ? 'Mostrar ao público' : 'Ocultar do público'}</button>
-                <button class="fx-btn-danger fx-btn" onclick="fxDeleteSocial('${d.id}')">${ICON.trash} Remover</button>
+                <button class="fx-btn-danger fx-btn" onclick="fxConfirmDeleteSocial('${d.id}')">${ICON.trash} Remover</button>
               </div>
             </div>`, 'rede.cfg');
   }
@@ -3357,6 +3597,16 @@
     fxCloseModal();
   }
 
+  function fxConfirmDeleteSocial(id) {
+    const s = (state.socials || []).find(x => x.id === id);
+    fxConfirmAction(
+      `Remover "${(s && s.name) || 'rede'}"?`,
+      'Essa ação não pode ser desfeita.',
+      'Sim, remover',
+      `fxDeleteSocial('${id}')`
+    );
+  }
+
   function fxDeleteSocial(id) {
     state.socials = (state.socials || []).filter(s => s.id !== id);
     fxSave('socials');
@@ -3364,25 +3614,32 @@
     fxCloseModal();
   }
 
-  /* ---------- Visibilidade das abas ----------
-     Cada aba pode ficar oculta pro público (o admin sempre continua vendo
-     todas, marcadas como "Oculta"). Guardado em state.tabVisibility. */
-  function fxOpenTabVisibility() {
+  /* ---------- Gerenciar abas ----------
+     Uma tela só pra tudo que envolve abas: mostrar/esconder do público
+     (guardado em state.tabVisibility), e — só pras personalizadas — renomear
+     ou excluir de vez (com confirmação, já que apaga os cards junto). */
+  function fxOpenTabManager() {
     const rows = fxAllTabDefs().map(t => {
       const forcedAdmin = t.adminOnly ? ' <span style="color:var(--text-3);font-weight:400">(sempre só admin)</span>' : '';
+      const customBtns = t.custom ? `
+                  <button class="fx-tab-mgr-btn" title="Renomear aba" onclick="fxOpenRenameTabForm('${t.id}')">${ICON.edit}</button>
+                  <button class="fx-tpl-remove-btn" title="Excluir aba" onclick="fxConfirmDeleteCustomTab('${t.id}')">${ICON.trash}</button>` : '';
       return `<label class="fx-toggle-row">
                 <span>${esc(t.label)}${forcedAdmin}</span>
-                <input type="checkbox" ${fxIsTabHidden(t.id) ? '' : 'checked'} onchange="fxToggleTabVisibility('${t.id}', this.checked)">
+                <span class="fx-tab-mgr-controls">
+                  <input type="checkbox" ${fxIsTabHidden(t.id) ? '' : 'checked'} onchange="fxToggleTabVisibility('${t.id}', this.checked)">
+                  ${customBtns}
+                </span>
               </label>`;
     }).join('');
     fxOpenModal(`<div class="fx-modal-body">
-              <h3 class="fx-modal-title">Abas visíveis ao público</h3>
-              <p class="fx-modal-sinopse" style="margin-bottom:14px">Desmarque uma aba pra escondê-la de quem visita o site. Você continua vendo todas, com a marcação "Oculta".</p>
+              <h3 class="fx-modal-title">Gerenciar abas</h3>
+              <p class="fx-modal-sinopse" style="margin-bottom:14px">Desmarque uma aba pra escondê-la de quem visita o site (você continua vendo todas, marcadas como "Oculta"). Abas personalizadas também podem ser renomeadas ou excluídas por aqui.</p>
               <div style="display:flex;flex-direction:column;gap:8px">${rows}</div>
               <div class="fx-modal-actions">
                 <button class="fx-btn-ghost fx-btn" onclick="fxOpenAdminPanel()">Voltar</button>
               </div>
-            </div>`, 'visibilidade.cfg');
+            </div>`, 'abas.cfg');
   }
 
   function fxToggleTabVisibility(id, checked) {
@@ -3390,6 +3647,35 @@
     state.tabVisibility[id] = !checked;
     fxSave('tabVisibility');
     fxRenderNav();
+  }
+
+  function fxOpenRenameTabForm(id) {
+    const tab = (state.customTabs || []).find(t => t.id === id);
+    if (!tab) return;
+    fxOpenModal(`<div class="fx-modal-body">
+              <h3 class="fx-modal-title">Renomear aba</h3>
+              <div class="fx-form-full"><label class="fx-field-label">Nome da aba *</label><input class="fx-input" autocomplete="off" id="f-rename-tab-label" value="${esc(tab.label)}"></div>
+              <div class="fx-modal-actions">
+                <button class="fx-btn" onclick="fxRenameCustomTab('${id}')">Salvar</button>
+                <button class="fx-btn-ghost fx-btn" onclick="fxOpenTabManager()">Cancelar</button>
+              </div>
+            </div>`, 'renomear_aba.tmp');
+  }
+
+  function fxRenameCustomTab(id) {
+    const input = document.getElementById('f-rename-tab-label');
+    const label = ((input && input.value) || '').trim();
+    if (!label) return;
+    const tab = (state.customTabs || []).find(t => t.id === id);
+    if (!tab) return;
+    tab.label = label;
+    fxSave('customTabs');
+    if (state.templates && state.templates[id]) {
+      state.templates[id].label = label;
+      fxSave('templates');
+    }
+    fxRenderNav();
+    fxOpenTabManager();
   }
 
   /* ---------- Painel de filtros recolhível ----------
@@ -3423,6 +3709,76 @@
 
   /* ---------- Hero / countdown ---------- */
   const FX_TWITCH_URL = 'https://www.twitch.tv/FractalVox';
+  const FX_YOUTUBE_LIVE_URL = 'https://www.youtube.com/@fractalvox/live';
+
+  /** Serviço de terceiros (não-oficial) que expõe se um canal da Twitch está
+      ao vivo sem precisar de client-id/senha — a API oficial da Twitch exige
+      autenticação que não dá pra guardar com segurança num site estático como
+      este. O parâmetro offline_msg força o texto exato que ele devolve quando
+      o canal está offline, pra não depender de adivinhar o texto padrão dele. */
+  const FX_TWITCH_LIVE_CHECK_URL = 'https://decapi.me/twitch/uptime/fractalvox?offline_msg=OFFLINE';
+  const FX_LIVE_CHECK_INTERVAL_MS = 20000;
+
+  let fxHeroLiveConfirmed = false;
+  let fxHeroLiveCheckedFor = null;
+  let fxHeroLiveCheckInFlight = false;
+  let fxHeroLiveLastCheckAt = 0;
+
+  /** Retorna true (ao vivo), false (offline) ou null quando não deu pra saber
+      (rede fora, serviço de terceiros fora do ar...) — nesse caso o hero
+      simplesmente continua em "Aguarde" e tenta de novo depois. */
+  async function fxCheckTwitchLive() {
+    try {
+      const res = await fetch(FX_TWITCH_LIVE_CHECK_URL, {
+        cache: 'no-store'
+      });
+      if (!res.ok) return null;
+      const text = (await res.text()).trim();
+      return text.toUpperCase() !== 'OFFLINE';
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /** Chamado a cada render do hero enquanto ele está em "Aguarde" — mas só
+      dispara uma checagem de verdade no máximo a cada 20s, pra não martelar
+      o serviço de terceiros. Roda em segundo plano; quando confirma ao vivo,
+      re-renderiza o hero pra trocar de tela sozinho. Se quem estiver com o
+      site aberto for você (admin), a confirmação também é salva pra todo
+      mundo — assim ninguém mais precisa esperar a própria checagem confirmar
+      de novo. Em qualquer outro navegador (visitante comum) a confirmação
+      fica só local: não tenta gravar no banco, porque essa gravação seria
+      barrada mesmo (só admin pode salvar) e apareceria um alerta de erro
+      confuso pra quem só estava assistindo. */
+  function fxPollTwitchLive() {
+    if (fxHeroLiveCheckInFlight) return;
+    const now = Date.now();
+    if (now - fxHeroLiveLastCheckAt < FX_LIVE_CHECK_INTERVAL_MS) return;
+    fxHeroLiveLastCheckAt = now;
+    fxHeroLiveCheckInFlight = true;
+    fxCheckTwitchLive().then(live => {
+      fxHeroLiveCheckInFlight = false;
+      if (live === true) {
+        fxHeroLiveConfirmed = true;
+        if (fxIsAdmin() && state.hero && !state.hero.forceLive) {
+          state.hero.forceLive = true;
+          fxSave('hero');
+        }
+        fxRenderHero();
+      }
+    });
+  }
+
+  /** Botão de emergência do admin: se a checagem automática falhar por
+      qualquer motivo, ainda dá pra virar "AO VIVO" na mão — e isso já
+      sincroniza pra todo mundo, porque fica salvo junto com o hero. */
+  function fxForceHeroLive() {
+    if (!state.hero) return;
+    state.hero.forceLive = true;
+    fxSave('hero');
+    fxHeroLiveConfirmed = true;
+    fxRenderHero();
+  }
 
   function fxRenderHero() {
     const el = document.getElementById('fx-hero');
@@ -3443,17 +3799,30 @@
     const h = state.hero;
     const target = new Date(h.datetime);
     const now = new Date();
-    // Passou do horário marcado: em vez do contador ficar travado em zero,
-    // mostra "AO VIVO". Não existe horário de término salvo — some só quando
-    // você trocar ou apagar a próxima live no painel.
-    const isLive = target <= now;
+
+    // Trocou a live agendada (ou é a primeira vez que roda): zera a
+    // confirmação da checagem automática, que só vale pra ESSA live.
+    if (fxHeroLiveCheckedFor !== h.datetime) {
+      fxHeroLiveCheckedFor = h.datetime;
+      fxHeroLiveConfirmed = false;
+    }
+
+    const pastTarget = target <= now;
+    // "Ao vivo" de verdade só quando confirmado — via checagem automática na
+    // Twitch ou o admin marcando na mão. Só passar do horário não basta:
+    // nesse meio-tempo fica em "Aguarde" (ver mais abaixo).
+    const isLive = pastTarget && (h.forceLive || fxHeroLiveConfirmed);
+    const isWaiting = pastTarget && !isLive;
+
+    if (isWaiting) fxPollTwitchLive();
 
     if (fxIsAdmin()) {
-      // Admin sempre pode clicar no hero pra editar/encerrar, ao vivo ou não.
+      // Admin sempre pode clicar no hero pra editar/encerrar, em qualquer estado.
       el.onclick = fxOpenHeroForm;
       el.classList.add('fx-hero-clickable');
-    } else if (isLive) {
-      // Visitante durante a live: o hero inteiro vira atalho pra Twitch.
+    } else if (pastTarget) {
+      // Visitante depois do horário marcado (aguardando ou já confirmado ao
+      // vivo): o hero inteiro vira atalho pra Twitch.
       el.onclick = () => window.open(FX_TWITCH_URL, '_blank', 'noopener');
       el.classList.add('fx-hero-clickable');
     } else {
@@ -3466,6 +3835,14 @@
       rightHtml = `<div class="fx-hero-live">
                 <div class="fx-hero-live-badge"><span class="fx-hero-live-dot"></span>AO VIVO</div>
                 <a class="fx-hero-live-link" href="${FX_TWITCH_URL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir na Twitch</a>
+              </div>`;
+    } else if (isWaiting) {
+      const forceBtn = fxIsAdmin() ?
+        `<button class="fx-btn fx-btn-sm" onclick="event.stopPropagation();fxForceHeroLive()">Já estou ao vivo</button>` :
+        '';
+      rightHtml = `<div class="fx-hero-waiting">
+                <div class="fx-hero-waiting-badge">AGUARDE</div>
+                ${forceBtn}
               </div>`;
     } else {
       const diff = target - now;
@@ -3489,10 +3866,14 @@
       minute: '2-digit'
     });
 
+    const pick = h.imagePick || 'horizontal';
+    const heroImgSrc = fxPickImage(h.images || h.image, pick);
+    const eyebrowText = isLive ? 'Ao vivo agora' : (isWaiting ? 'Aguardando início' : 'Próxima live');
+
     el.innerHTML = `${winbar}<div class="fx-hero-content">
-              ${fxImgTag(h.image, 'fx-hero-img', 'fx-hero-img fx-hero-noimg')}
+              ${fxImgTag(heroImgSrc, 'fx-hero-img pick-'+pick, 'fx-hero-img fx-hero-noimg pick-'+pick)}
               <div class="fx-hero-mid">
-                <div class="fx-hero-eyebrow"><span class="fx-hero-dot${isLive?' fx-hero-dot-live':''}"></span>${isLive?'Ao vivo agora':'Próxima live'}</div>
+                <div class="fx-hero-eyebrow"><span class="fx-hero-dot${isLive?' fx-hero-dot-live':''}"></span>${eyebrowText}</div>
                 <div class="fx-hero-title">${esc(h.title)}</div>
                 <div class="fx-hero-time">${ICON.clock} ${dayName.charAt(0).toUpperCase()+dayName.slice(1)} às ${timeStr}</div>
               </div>
@@ -3502,12 +3883,26 @@
   function fxOpenHeroForm() {
     const h = state.hero || {};
     const dtVal = h.datetime ? h.datetime.slice(0, 16) : '';
+    const imgs = (h.images && typeof h.images === 'object') ? h.images : {
+      vertical: h.image || '',
+      horizontal: '',
+      square: ''
+    };
+    const pick = h.imagePick || 'horizontal';
     fxOpenModal(`<div class="fx-modal-body">
               <h3 class="fx-modal-title">Próxima live</h3>
               <div class="fx-form-grid">
                 <div class="fx-form-full"><label class="fx-field-label">Título da live</label><input class="fx-input" autocomplete="off" id="f-hero-title" value="${esc(h.title||'')}"></div>
-                <div class="fx-form-full"><label class="fx-field-label">Imagem (URL)</label><input class="fx-input" autocomplete="off" id="f-hero-image" value="${esc(h.image||'')}"></div>
-                <div class="fx-form-full" style="margin-top:-4px"><input type="file" accept="image/*" class="fx-input" autocomplete="off" style="width:100%;font-size:12px;padding:6px" onchange="fxImageFileToInput(this,'f-hero-image')"><span style="font-size:11px;color:var(--text-3)">ou envie uma imagem do computador (comprimida automaticamente)</span></div>
+                <div class="fx-form-full"><label class="fx-field-label">Imagem</label>
+                  ${fxImageVariantsHtml('f-hero-image', imgs)}
+                </div>
+                <div class="fx-form-full"><label class="fx-field-label">Qual imagem mostrar aqui no hero</label>
+                  <select class="fx-select" id="f-hero-image-pick" style="width:100%">
+                    <option value="horizontal"${pick==='horizontal'?' selected':''}>Horizontal (16:9)</option>
+                    <option value="vertical"${pick==='vertical'?' selected':''}>Vertical (pôster)</option>
+                    <option value="square"${pick==='square'?' selected':''}>Quadrada (1:1)</option>
+                  </select>
+                </div>
                 <div class="fx-form-full"><label class="fx-field-label">Data e hora</label><input class="fx-input" autocomplete="off" type="datetime-local" id="f-hero-datetime" value="${dtVal}"></div>
               </div>
               <div class="fx-modal-actions">
@@ -3531,14 +3926,28 @@
 
   function fxSaveHero() {
     const title = document.getElementById('f-hero-title').value.trim();
-    const image = document.getElementById('f-hero-image').value.trim();
     const dt = document.getElementById('f-hero-datetime').value;
     if (!title || !dt) return;
+    const images = fxImageVariantsValue('f-hero-image');
+    const imagePick = (document.getElementById('f-hero-image-pick') || {}).value || 'horizontal';
+    const newDatetime = new Date(dt).toISOString();
+    const prev = state.hero || {};
+    // Se for a MESMA live (só corrigindo título/imagem), preserva o "ao vivo"
+    // já confirmado — senão editar o hero no meio da transmissão voltaria ela
+    // pro "Aguarde" do nada. Só reseta de verdade quando a data muda (ou seja,
+    // é uma transmissão diferente).
+    const sameStream = prev.datetime === newDatetime;
     state.hero = {
       title,
-      image,
-      datetime: new Date(dt).toISOString()
+      images,
+      imagePick,
+      datetime: newDatetime,
+      forceLive: sameStream ? !!prev.forceLive : false
     };
+    if (!sameStream) {
+      fxHeroLiveConfirmed = false;
+      fxHeroLiveCheckedFor = null;
+    }
     fxSave('hero');
     fxRenderHero();
     fxCloseModal();
@@ -3546,128 +3955,170 @@
 
   function fxDeleteHero() {
     state.hero = {};
+    fxHeroLiveConfirmed = false;
+    fxHeroLiveCheckedFor = null;
     fxSave('hero');
     fxRenderHero();
     fxCloseModal();
   }
 
-  /* ---------- Week schedule ---------- */
-  function fxWeekDates(weekOffset) {
-    const now = new Date();
-    const dow = now.getDay();
-    const sunday = new Date(now);
-    sunday.setDate(now.getDate() - dow + (weekOffset || 0) * 7);
-    return DAYS.map((_, i) => {
-      const d = new Date(sunday);
-      d.setDate(sunday.getDate() + i);
-      return d;
-    });
-  }
-
-  /** Chave (AAAA-MM-DD) do domingo que hoje representa pra aquele weekOffset —
-      usada só pra saber se a semana já virou desde a última visita. */
-  function fxWeekAnchorKey(weekOffset) {
-    const d = fxWeekDates(weekOffset || 0)[0];
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2,
-      '0');
-  }
-
-  /** A semana "atual" (weekOffset 0) e a "seguinte" (weekOffset 1) são só
-      rótulos guardados em cada card de state.schedule — eles não se movem
-      sozinhos quando o calendário vira. Essa função detecta a virada (de
-      sábado pra domingo, comparando com a última âncora salva) e então:
-      apaga os cards que estavam em weekOffset 0 (semana que já passou) e
-      promove os que estavam em weekOffset 1 pra weekOffset 0 — deixando a
-      semana seguinte limpa de novo. Só uma sessão admin executa a mudança,
-      já que ela grava no banco compartilhado. Retorna true se algo mudou. */
-  function fxCheckWeekRollover() {
-    const todayAnchor = fxWeekAnchorKey(0);
-    const stored = state.scheduleWeekAnchor;
-    if (stored === todayAnchor) return false;
-    if (!fxIsAdmin()) return false;
-
-    if (!stored) {
-      // Primeira vez que esse recurso roda neste site: só marca o ponto de
-      // partida, sem apagar nada que já esteja agendado.
-      state.scheduleWeekAnchor = todayAnchor;
-      fxSave('scheduleWeekAnchor');
-      return false;
-    }
-
-    const [sy, sm, sd] = stored.split('-').map(Number);
-    const [ty, tm, td] = todayAnchor.split('-').map(Number);
-    const weeksPassed = Math.round((new Date(ty, tm - 1, td) - new Date(sy, sm - 1, sd)) / (7 * 86400000));
-    if (weeksPassed < 1) return false; // relógio local inconsistente — não mexe em nada
-
-    if (weeksPassed === 1) {
-      state.schedule = state.schedule
-        .filter(s => (s.weekOffset || 0) !== 0)
-        .map(s => (s.weekOffset || 0) === 1 ? {
-          ...s,
-          weekOffset: 0
-        } : s);
-    } else {
-      // Duas ou mais semanas sem abrir como admin: nem a semana "atual" nem a
-      // "seguinte" de então ainda fazem sentido hoje.
-      state.schedule = [];
-    }
-    state.scheduleWeekAnchor = todayAnchor;
-    fxSave('schedule');
-    fxSave('scheduleWeekAnchor');
-    return true;
-  }
-
+  /* ---------- Cronograma: transmissões agendadas ---------- */
   function fxCatalogById(catalog, id) {
-    return state[catalog].find(i => i.id === id);
+    return (state[catalog] || []).find(i => i.id === id);
   }
 
-  /** Redesenha a semana atual e, se for admin, também a próxima semana (planejamento). */
-  function fxRenderAllWeeks() {
-    fxRenderWeek(0, 'fx-week');
-    const nextEl = document.getElementById('fx-week-next-wrap');
-    if (nextEl) nextEl.style.display = fxIsAdmin() ? '' : 'none';
-    if (fxIsAdmin()) fxRenderWeek(1, 'fx-week-next');
+  /** Converte agendamentos do formato antigo (dia da semana + weekOffset,
+      sem data real) pra uma data/hora concreta, usando a semana atual como
+      referência — só roda uma vez, na primeira carga depois da atualização
+      do site. Não apaga nada: só recalcula em memória; a gravação definitiva
+      só acontece se quem estiver vendo for admin (fxSave exige sessão admin
+      de qualquer forma). */
+  function fxMigrateLegacySchedule() {
+    if (!state.schedule || !state.schedule.length) return;
+    let changed = false;
+    const now = new Date();
+    const sunday = new Date(now);
+    sunday.setDate(now.getDate() - now.getDay());
+    state.schedule = state.schedule.map(s => {
+      if (s.datetime || !s.day) return s;
+      const idx = DAYS.indexOf(s.day);
+      if (idx < 0) return s;
+      const d = new Date(sunday);
+      d.setDate(sunday.getDate() + idx + (s.weekOffset || 0) * 7);
+      d.setHours(20, 0, 0, 0);
+      changed = true;
+      return {
+        id: s.id,
+        catalog: s.catalog,
+        refId: s.refId,
+        datetime: d.toISOString()
+      };
+    });
+    if (changed && fxIsAdmin()) fxSave('schedule');
   }
 
-  function fxRenderWeek(weekOffset, elId) {
-    weekOffset = weekOffset || 0;
-    const dates = fxWeekDates(weekOffset);
-    const todayStr = new Date().toDateString();
-    const el = document.getElementById(elId || 'fx-week');
+  function fxFormatSchedDate(iso) {
+    const d = new Date(iso);
+    const dayName = d.toLocaleDateString('pt-BR', {
+      weekday: 'long'
+    });
+    const dateStr = d.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long'
+    });
+    const timeStr = d.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    return `${dayName.charAt(0).toUpperCase()}${dayName.slice(1)}, ${dateStr} às ${timeStr}`;
+  }
+
+  function fxIsSchedPast(iso) {
+    return new Date(iso) <= new Date();
+  }
+
+  /** Ordem fixa Anteriores | Todos | Próximas (em vez da ordem padrão "Todos"
+      primeiro que fxRenderChipRow usa nos outros filtros do site). */
+  function fxRenderSchedFilter() {
+    const el = document.getElementById('sched-filter');
+    if (!el) return;
+    const opts = [{
+      value: 'Anteriores',
+      label: 'Anteriores'
+    }, {
+      value: '',
+      label: 'Todos'
+    }, {
+      value: 'Próximas',
+      label: 'Próximas'
+    }];
+    el.innerHTML = opts.map(o =>
+      `<div class="fx-chip${fxFilters.schedule.filter===o.value?' active':''}" onclick="fxSetSchedFilter('${o.value}')">${esc(o.label)}</div>`
+    ).join('');
+  }
+
+  function fxSetSchedFilter(value) {
+    fxFilters.schedule.filter = value;
+    fxRenderSchedFilter();
+    fxRenderSchedule();
+  }
+
+  /** Lista as transmissões agendadas em ordem cronológica — só os dias que
+      realmente vão (ou foram) ao vivo, sem "buracos" mostrando dias vazios.
+      Cada card mostra a miniatura (prioriza a imagem quadrada, caindo pra
+      horizontal se não tiver), categoria, data/hora e botões que mudam
+      conforme o status: enquanto está agendada, sempre levam pro canal (Twitch
+      e YouTube); depois que já rolou, levam pro VOD específico daquela
+      transmissão (cadastrado em "Editar horário/links") quando existir. */
+  function fxRenderSchedule() {
+    const el = document.getElementById('fx-sched-list');
     if (!el) return;
     const isAdmin = fxIsAdmin();
-    el.innerHTML = DAYS.map((day, idx) => {
-      const date = dates[idx];
-      const isToday = weekOffset === 0 && date.toDateString() === todayStr;
-      const items = state.schedule.filter(s => s.day === day && (s.weekOffset || 0) === weekOffset);
-      const cardsHtml = items.length ? items.map(s => {
-        const item = fxCatalogById(s.catalog, s.refId);
-        if (!item) return '';
-        const tagColor = s.catalog === 'sponsored' ? '#E0A83E' : s.catalog === 'quick' ? '#E8967D' : (STATUS_COLORS[
-          item.status] || '#7FA8C9');
-        const tagText = s.catalog === 'sponsored' ? 'Em breve' : s.catalog === 'quick' ? '' : (s.catalog === 'games' ?
-          'Jogo' : (item.type || (s.catalog === 'watched' ? 'Assistido' : fxTemplateFor(s.catalog).label)));
-        const handle = isAdmin ?
-          `<div class="fx-daycard-bar fx-drag-handle" onpointerdown="fxDragStart(event,this)"><span></span><span></span><span></span></div>` :
-          `<div class="fx-daycard-bar"><span></span><span></span><span></span></div>`;
-        return `<div class="fx-daycard" data-drag-item data-id="${s.id}" onclick="fxOpenDetail('${s.catalog}','${item.id}','${s.id}')">
-                  ${handle}
-                  <div class="fx-daycard-imgwrap">
-                    ${fxImgTag(item.image, 'fx-daycard-img', 'fx-daycard-noimg')}
-                    <div class="fx-daycard-gradient"></div>
-                    ${tagText ? `<span class="fx-daycard-tag" style="background:${tagColor}22;color:${tagColor}">${esc(tagText)}</span>` : ''}
-                    ${isAdmin ? `<button class="fx-daycard-remove" onclick="event.stopPropagation();fxRemoveSchedule('${s.id}')">${ICON.x}</button>` : ''}
-                    <div class="fx-daycard-title">${esc(item.title)}</div>
+    const now = new Date();
+    let items = (state.schedule || []).filter(s => s.datetime && fxCatalogById(s.catalog, s.refId));
+    const filter = fxFilters.schedule.filter;
+    if (filter === 'Próximas') items = items.filter(s => new Date(s.datetime) > now);
+    else if (filter === 'Anteriores') items = items.filter(s => new Date(s.datetime) <= now);
+    items = items.slice().sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+
+    if (!items.length) {
+      el.innerHTML = `<div class="fx-sched-empty">
+                <div class="fx-sched-empty-title">${filter ? 'Nada por aqui' : 'Nenhuma transmissão agendada'}</div>
+                <p>${filter ? 'Nenhuma transmissão nesse filtro no momento.' : (isAdmin ? 'Clique em "+ Adicionar transmissão" pra agendar a próxima.' : 'Volte em breve pra conferir as próximas lives.')}</p>
+              </div>`;
+      return;
+    }
+
+    el.innerHTML = items.map(s => {
+      const item = fxCatalogById(s.catalog, s.refId);
+      const past = fxIsSchedPast(s.datetime);
+      const tpl = fxTemplateFor(s.catalog);
+      const tagColor = s.catalog === 'sponsored' ? '#E0A83E' : s.catalog === 'quick' ? '#E8967D' : (STATUS_COLORS[
+        item.status] || '#7FA8C9');
+      const tagText = s.catalog === 'sponsored' ? 'Patrocinado' : s.catalog === 'quick' ? 'Card padrão' : (s.catalog ===
+        'games' ? 'Jogo' : (item.type || (s.catalog === 'watched' ? 'Assistido' : (tpl.label || 'Conteúdo'))));
+
+      let actionsHtml = '';
+      if (past) {
+        if (s.twitchUrl) actionsHtml +=
+          `<a class="fx-sched-btn fx-sched-btn-twitch" href="${esc(s.twitchUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir na Twitch</a>`;
+        if (s.youtubeUrl) actionsHtml +=
+          `<a class="fx-sched-btn fx-sched-btn-youtube" href="${esc(s.youtubeUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir no YouTube</a>`;
+        if (!s.twitchUrl && !s.youtubeUrl) actionsHtml +=
+          `<span class="fx-sched-btn fx-sched-btn-pending">VOD em breve</span>`;
+      } else {
+        // Enquanto ainda não rolou, os dois botões sempre levam pro canal —
+        // não faz sentido pedir um link específico de algo que ainda não existe.
+        actionsHtml =
+          `<a class="fx-sched-btn fx-sched-btn-twitch" href="${FX_TWITCH_URL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir na Twitch</a>
+                <a class="fx-sched-btn fx-sched-btn-youtube" href="${FX_YOUTUBE_LIVE_URL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir no YouTube</a>`;
+      }
+
+      const adminBtns = isAdmin ? `<div class="fx-sched-thumb-actions">
+                  <button class="fx-sched-thumb-btn" title="Editar horário e links" onclick="event.stopPropagation();fxOpenSchedEntryForm('${s.id}')">${ICON.edit}</button>
+                  <button class="fx-sched-thumb-btn danger" title="Remover da agenda" onclick="event.stopPropagation();fxRemoveScheduleGuarded('${s.id}')">${ICON.x}</button>
+                </div>` : '';
+
+      return `<div class="fx-sched-card">
+                <div class="fx-sched-card-body">
+                  <div class="fx-sched-thumb">
+                    <div class="fx-daycard" onclick="fxOpenDetail('${s.catalog}','${item.id}','${s.id}')">
+                      <div class="fx-daycard-bar"><span></span><span></span><span></span></div>
+                      <div class="fx-daycard-imgwrap">
+                        ${fxImgTag(fxPickImage(item.image, 'square'), 'fx-daycard-img', 'fx-daycard-noimg')}
+                        <div class="fx-daycard-gradient"></div>
+                        <span class="fx-daycard-tag" style="background:${tagColor}22;color:${tagColor}">${esc(tagText)}</span>
+                        ${adminBtns}
+                      </div>
+                    </div>
                   </div>
-                </div>`;
-      }).join('') : '';
-      return `<div class="fx-day-col${isToday?' today':''}">
-                <div class="fx-day-head">
-                  <div class="fx-day-name">${isToday ? 'HOJE' : day.toUpperCase()}</div>
-                  <div class="fx-day-date">${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}</div>
+                  <div class="fx-sched-info">
+                    <div class="fx-sched-eyebrow" style="color:${past?'var(--text-3)':'var(--accent)'}">${past ? 'Já rolou' : 'Em breve'}</div>
+                    <h3 class="fx-sched-title" onclick="fxOpenDetail('${s.catalog}','${item.id}','${s.id}')">${esc(item.title)}</h3>
+                    <div class="fx-sched-date">${ICON.clock} ${esc(fxFormatSchedDate(s.datetime))}</div>
+                    <div class="fx-sched-actions">${actionsHtml}</div>
+                  </div>
                 </div>
-                <div class="fx-day-items" data-drag-container data-drag-group="sched" data-day="${day}" data-week-offset="${weekOffset}">${cardsHtml || '<div class="fx-day-empty">Sem programação</div>'}</div>
-                ${isAdmin ? `<button class="fx-day-add" onclick="fxOpenScheduleAdd('${day}',${weekOffset})">+ Adicionar</button>` : ''}
               </div>`;
     }).join('');
   }
@@ -3675,24 +4126,88 @@
   function fxRemoveSchedule(id) {
     state.schedule = state.schedule.filter(s => s.id !== id);
     fxSave('schedule');
-    fxRenderAllWeeks();
+    fxRenderSchedule();
   }
 
-  let fxSchedDay = null;
-  let fxSchedWeekOffset = 0;
+  /** Apagar um agendamento que já aconteceu é mais delicado (perde o registro
+      e o link de VOD junto) — pede confirmação nesse caso. Um agendamento
+      futuro ainda é rápido de remover (é só reagendar se for engano). */
+  function fxRemoveScheduleGuarded(id, closeAfter) {
+    const s = (state.schedule || []).find(x => x.id === id);
+    if (!s) return;
+    if (fxIsSchedPast(s.datetime)) {
+      fxConfirmAction(
+        'Excluir esta transmissão do histórico?',
+        'Ela já aconteceu — excluir remove o registro e qualquer link de VOD salvo aqui. Essa ação não pode ser desfeita.',
+        'Sim, excluir',
+        `fxRemoveSchedule('${id}');fxCloseModal()`
+      );
+    } else {
+      fxRemoveSchedule(id);
+      if (closeAfter) fxCloseModal();
+    }
+  }
 
-  function fxOpenScheduleAdd(day, weekOffset) {
-    fxSchedDay = day;
-    fxSchedWeekOffset = weekOffset || 0;
+  /** Edita só o horário e os links de VOD de um agendamento já existente, sem
+      mexer no card em si (isso é feito em "Editar card"). Os links só fazem
+      sentido depois que a live já rolou — antes disso os botões do Cronograma
+      levam direto pro canal, sem precisar de link nenhum aqui. */
+  function fxOpenSchedEntryForm(id) {
+    const s = (state.schedule || []).find(x => x.id === id);
+    if (!s) return;
+    const item = fxCatalogById(s.catalog, s.refId);
+    const dtVal = s.datetime ? s.datetime.slice(0, 16) : '';
     fxOpenModal(`<div class="fx-modal-body">
-              <h3 class="fx-modal-title">Adicionar em ${esc(day)}${fxSchedWeekOffset ? ' (semana seguinte)' : ''}</h3>
-              <div class="fx-mode-switch">
+              <h3 class="fx-modal-title">Editar agendamento</h3>
+              <p class="fx-modal-sinopse" style="margin-bottom:14px">${esc((item&&item.title)||'Item removido')}</p>
+              <div class="fx-form-grid">
+                <div class="fx-form-full"><label class="fx-field-label">Data e hora *</label><input class="fx-input" autocomplete="off" type="datetime-local" id="f-schedentry-datetime" value="${dtVal}"></div>
+                <div class="fx-form-full"><label class="fx-field-label">Link do VOD na Twitch (opcional — só depois que já rolou)</label><input class="fx-input" autocomplete="off" id="f-schedentry-twitch" value="${esc(s.twitchUrl||'')}" placeholder="https://twitch.tv/..."></div>
+                <div class="fx-form-full"><label class="fx-field-label">Link do VOD no YouTube (opcional — só depois que já rolou)</label><input class="fx-input" autocomplete="off" id="f-schedentry-youtube" value="${esc(s.youtubeUrl||'')}" placeholder="https://youtube.com/..."></div>
+              </div>
+              <div class="fx-modal-actions">
+                <button class="fx-btn" onclick="fxSubmitSchedEntryForm('${id}')">Salvar</button>
+                <button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Cancelar</button>
+              </div>
+              <div class="fx-modal-actions">
+                <button class="fx-btn-danger fx-btn" onclick="fxRemoveScheduleGuarded('${id}', true)">${ICON.trash} Remover da agenda</button>
+              </div>
+            </div>`, 'agendamento.cfg');
+  }
+
+  function fxSubmitSchedEntryForm(id) {
+    const s = (state.schedule || []).find(x => x.id === id);
+    if (!s) return;
+    const dt = (document.getElementById('f-schedentry-datetime') || {}).value || '';
+    if (!dt) return;
+    s.datetime = new Date(dt).toISOString();
+    s.twitchUrl = ((document.getElementById('f-schedentry-twitch') || {}).value || '').trim();
+    s.youtubeUrl = ((document.getElementById('f-schedentry-youtube') || {}).value || '').trim();
+    fxSave('schedule');
+    fxRenderSchedule();
+    fxCloseModal();
+  }
+
+  function fxSchedCommonFields() {
+    return {
+      dt: (document.getElementById('f-sched-datetime') || {}).value || ''
+    };
+  }
+
+  function fxOpenScheduleAdd() {
+    fxOpenModal(`<div class="fx-modal-body">
+              <h3 class="fx-modal-title">Nova transmissão</h3>
+              <div class="fx-form-grid">
+                <div class="fx-form-full"><label class="fx-field-label">Data e hora *</label><input class="fx-input" autocomplete="off" type="datetime-local" id="f-sched-datetime"></div>
+              </div>
+              <p style="font-size:11px;color:var(--text-3);margin:-4px 0 4px">Os links do VOD são adicionados depois, quando a live já tiver acontecido (em "Editar horário/links").</p>
+              <div class="fx-mode-switch" style="margin-top:10px">
                 <button class="fx-mode-btn active" id="sched-mode-existing" onclick="fxSchedMode('existing')">Selecionar existente</button>
                 <button class="fx-mode-btn" id="sched-mode-quick" onclick="fxSchedMode('quick')">Cards padrão</button>
                 <button class="fx-mode-btn" id="sched-mode-new" onclick="fxSchedMode('new')">Criar novo</button>
               </div>
               <div id="sched-body"></div>
-            </div>`);
+            </div>`, 'nova_transmissao.tmp');
     fxSchedMode('existing');
   }
 
@@ -3735,14 +4250,14 @@
 
   /** Aba "Cards padrão": grid com os cards avulsos reutilizáveis (Offline, Jogo
       aleatório, e o que mais o admin cadastrar) — clicar num tile já adiciona
-      no dia. O último tile ("+") abre um formulário mínimo (nome, imagem,
-      sinopse) pra cadastrar um novo card padrão na biblioteca. */
+      na agenda. O último tile ("+") abre um formulário mínimo (nome, imagem,
+      sinopse), sem sair do modal, pra cadastrar um card padrão novo. */
   function fxRenderQuickPicker() {
     const body = document.getElementById('sched-body');
     if (!body) return;
     const tiles = (state.quick || []).map(q => `
               <button class="fx-quick-tile" onclick="fxAddScheduleQuick('${q.id}')">
-                ${fxImgTag(q.image, 'fx-quick-tile-img', 'fx-quick-tile-noimg')}
+                ${fxImgTag(fxPickImage(q.image, 'square'), 'fx-quick-tile-img', 'fx-quick-tile-noimg')}
                 <span class="fx-quick-tile-name">${esc(q.title)}</span>
               </button>`).join('');
     body.innerHTML = `<div class="fx-quick-grid">
@@ -3757,40 +4272,46 @@
               </div>`;
   }
 
-  function fxAddScheduleQuick(id) {
-    state.schedule.push({
-      id: uid(),
-      day: fxSchedDay,
-      weekOffset: fxSchedWeekOffset,
-      catalog: 'quick',
-      refId: id
-    });
-    fxSave('schedule');
-    fxRenderAllWeeks();
-    fxCloseModal();
-  }
-
-  /** Formulário mínimo (nome, imagem, sinopse) — usa o template genérico do
-      catálogo "quick" — pra cadastrar um card padrão novo na biblioteca. Ao
-      salvar, o card já é criado e colocado no dia que estava sendo editado. */
   function fxOpenQuickCardForm() {
-    fxOpenModal(`<div class="fx-modal-body">
-              <h3 class="fx-modal-title">Novo card padrão</h3>
+    const body = document.getElementById('sched-body');
+    if (!body) return;
+    body.innerHTML = `<h4 style="font-size:14px;margin:0 0 10px">Novo card padrão</h4>
               ${fxFormFieldsHtml('quick', {})}
               <div class="fx-modal-actions">
-                <button class="fx-btn" onclick="fxSubmitQuickCard()">Criar e adicionar em ${esc(fxSchedDay)}</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxOpenScheduleAdd(fxSchedDay,fxSchedWeekOffset);fxSchedMode('quick')">Cancelar</button>
-              </div>
-            </div>`, 'novo_quick.tmp');
+                <button class="fx-btn" onclick="fxSubmitQuickCard()">Criar e adicionar</button>
+                <button class="fx-btn-ghost fx-btn" onclick="fxRenderQuickPicker()">Voltar</button>
+              </div>`;
   }
 
   function fxSubmitQuickCard() {
+    const {
+      dt
+    } = fxSchedCommonFields();
+    if (!dt) return;
     const item = fxCollectFormData('quick');
     if (!item.title) return;
     if (!state.quick) state.quick = [];
     state.quick.unshift(item);
     fxSave('quick');
     fxAddScheduleQuick(item.id);
+  }
+
+  function fxAddScheduleQuick(id) {
+    const {
+      dt
+    } = fxSchedCommonFields();
+    if (!dt) return;
+    state.schedule.push({
+      id: uid(),
+      catalog: 'quick',
+      refId: id,
+      datetime: new Date(dt).toISOString(),
+      twitchUrl: '',
+      youtubeUrl: ''
+    });
+    fxSave('schedule');
+    fxRenderSchedule();
+    fxCloseModal();
   }
 
   function fxSchedNewFields() {
@@ -3804,22 +4325,31 @@
   }
 
   function fxAddScheduleExisting() {
+    const {
+      dt
+    } = fxSchedCommonFields();
+    if (!dt) return;
     const val = document.getElementById('sched-existing-select').value;
     if (!val || !val.includes('|')) return;
     const [cat, id] = val.split('|');
     state.schedule.push({
       id: uid(),
-      day: fxSchedDay,
-      weekOffset: fxSchedWeekOffset,
       catalog: cat,
-      refId: id
+      refId: id,
+      datetime: new Date(dt).toISOString(),
+      twitchUrl: '',
+      youtubeUrl: ''
     });
     fxSave('schedule');
-    fxRenderAllWeeks();
+    fxRenderSchedule();
     fxCloseModal();
   }
 
   function fxAddScheduleNew() {
+    const {
+      dt
+    } = fxSchedCommonFields();
+    if (!dt) return;
     const cat = document.getElementById('sched-new-catalog').value;
     const item = fxCollectFormData(cat);
     if (!item.title) return;
@@ -3828,13 +4358,14 @@
     fxRenderGrid(cat);
     state.schedule.push({
       id: uid(),
-      day: fxSchedDay,
-      weekOffset: fxSchedWeekOffset,
       catalog: cat,
-      refId: item.id
+      refId: item.id,
+      datetime: new Date(dt).toISOString(),
+      twitchUrl: '',
+      youtubeUrl: ''
     });
     fxSave('schedule');
-    fxRenderAllWeeks();
+    fxRenderSchedule();
     fxCloseModal();
   }
 
@@ -4138,8 +4669,14 @@
     const label = `<label class="fx-field-label">${esc(field.label)}${field.required ? ' *' : ''}</label>`;
 
     if (field.type === 'image') {
-      return `<div class="fx-form-full">${label}<input class="fx-input" autocomplete="off" id="${id}" value="${esc(val||'')}" placeholder="URL da imagem"></div>
-              <div class="fx-form-full" style="margin-top:-4px"><input type="file" accept="image/*" class="fx-input" autocomplete="off" style="width:100%;font-size:12px;padding:6px" onchange="fxImageFileToInput(this,'${id}')"><span style="font-size:11px;color:var(--text-3)">ou envie uma imagem do computador (comprimida automaticamente)</span></div>`;
+      const imgs = (val && typeof val === 'object') ? val : {
+        vertical: val || '',
+        horizontal: '',
+        square: ''
+      };
+      return `<div class="fx-form-full">${label}
+              ${fxImageVariantsHtml(id, imgs)}
+              <span style="font-size:11px;color:var(--text-3)">Preencha ao menos uma — as abas de cards usam a vertical, e o Cronograma usa a quadrada (cai pra horizontal se não tiver).</span></div>`;
     }
     if (field.type === 'multiselect') {
       const opts = field.optionsFrom ? (state[field.optionsFrom] || []) : (field.options || []);
@@ -4176,6 +4713,12 @@
 
   function fxTplFieldValue(field) {
     const id = fxFieldInputId(field.key);
+    if (field.type === 'image') {
+      return {
+        _images: true,
+        ...fxImageVariantsValue(id)
+      };
+    }
     if (field.type === 'multiselect') {
       const box = document.getElementById(id);
       return box ? Array.from(box.querySelectorAll('input:checked')).map(c => c.value) : [];
@@ -4259,6 +4802,12 @@
       if (v && v._progress) {
         data[field.key] = v.current;
         data[v.totalKey] = v.total;
+      } else if (v && v._images) {
+        data[field.key] = {
+          vertical: v.vertical,
+          horizontal: v.horizontal,
+          square: v.square
+        };
       } else {
         data[field.key] = v;
       }
@@ -4283,8 +4832,19 @@
     else arr.unshift(data);
     fxSave(catalog);
     fxRenderGrid(catalog);
-    if (catalog !== 'content') fxRenderAllWeeks();
+    if (catalog !== 'content') fxRenderSchedule();
     fxCloseModal();
+  }
+
+  function fxConfirmDeleteItem(catalog, id) {
+    const item = fxCatalogById(catalog, id);
+    const inSchedule = (state.schedule || []).some(s => s.catalog === catalog && s.refId === id);
+    fxConfirmAction(
+      `Excluir "${(item && item.title) || 'item'}"?`,
+      `Essa ação não pode ser desfeita.${inSchedule ? ' Também some de qualquer transmissão agendada com ele.' : ''}`,
+      'Sim, excluir',
+      `fxDeleteItem('${catalog}','${id}')`
+    );
   }
 
   function fxDeleteItem(catalog, id) {
@@ -4293,7 +4853,7 @@
     fxSave(catalog);
     fxSave('schedule');
     fxRenderGrid(catalog);
-    fxRenderAllWeeks();
+    fxRenderSchedule();
     fxCloseModal();
   }
 
@@ -4302,7 +4862,7 @@
     const d = fxCatalogById(catalog, id);
     if (!d) return;
     const tpl = fxTemplateFor(catalog);
-    const heroImg = fxImgTag(d.image, '', 'fx-modal-hero-noimg');
+    const heroImg = fxImgTag(fxPickImage(d.image, 'horizontal'), '', 'fx-modal-hero-noimg');
 
     const tagsParts = [];
     if (catalog === 'sponsored') tagsParts.push(fxBadge('Em breve', '#E0A83E'));
@@ -4351,7 +4911,7 @@
     if (catalog === 'content' && d.linkCat && d.linkId) {
       const ref = fxCatalogById(d.linkCat, d.linkId);
       if (ref) special += `<div class="fx-linked-ref" onclick="fxOpenDetail('${d.linkCat}','${ref.id}')">
-                ${fxImgTag(ref.image, '', 'fx-linked-ref-noimg')}
+                ${fxImgTag(fxPickImage(ref.image, 'vertical'), '', 'fx-linked-ref-noimg')}
                 <div><div class="fx-linked-ref-name">${esc(ref.title)}</div><div class="fx-linked-ref-type">${d.linkCat==='watched'?'Assistido':'Jogado'}</div></div>
               </div>`;
     }
@@ -4362,19 +4922,21 @@
     let actionsHtml = '';
     if (fxIsAdmin()) {
       if (scheduleEntryId) {
-        // Aberto a partir de um card do Cronograma: a ação principal é só tirar do dia,
-        // sem apagar o item de Assistidos/Jogados/Patrocinados/cards padrão. Excluir de vez
-        // fica à parte, menor e separado, pra não ser clicado sem querer no lugar de "Remover deste dia".
+        // Aberto a partir de um card do Cronograma: as ações principais são editar o
+        // card em si, editar horário/links da transmissão, ou só tirar da agenda —
+        // sem apagar o item de Assistidos/Jogados/Patrocinados/cards padrão. Excluir
+        // de vez fica à parte, menor e separado, pra não ser clicado sem querer.
         actionsHtml =
           `<div class="fx-modal-actions">
-                  <button class="fx-btn-ghost fx-btn" onclick="fxOpenForm('${catalog}','${d.id}')">${ICON.edit} Editar</button>
-                  <button class="fx-btn-danger fx-btn" onclick="fxRemoveSchedule('${scheduleEntryId}');fxCloseModal()">${ICON.x} Remover deste dia</button>
+                  <button class="fx-btn-ghost fx-btn" onclick="fxOpenForm('${catalog}','${d.id}')">${ICON.edit} Editar card</button>
+                  <button class="fx-btn-ghost fx-btn" onclick="fxOpenSchedEntryForm('${scheduleEntryId}')">${ICON.clock} Editar horário/links</button>
+                  <button class="fx-btn-danger fx-btn" onclick="fxRemoveScheduleGuarded('${scheduleEntryId}', true)">${ICON.x} Remover da agenda</button>
                 </div>
-                <button class="fx-modal-danger-link" onclick="fxDeleteItem('${catalog}','${d.id}')">Excluir ${esc(d.title)} definitivamente${catalog==='quick'?' (some da biblioteca de cards padrão)':' (de todas as abas)'}</button>`;
+                <button class="fx-modal-danger-link" onclick="fxConfirmDeleteItem('${catalog}','${d.id}')">Excluir ${esc(d.title)} definitivamente${catalog==='quick'?' (some da biblioteca de cards padrão)':' (de todas as abas)'}</button>`;
       } else {
         actionsHtml = `<div class="fx-modal-actions">
                   <button class="fx-btn-ghost fx-btn" onclick="fxOpenForm('${catalog}','${d.id}')">${ICON.edit} Editar</button>
-                  <button class="fx-btn-danger fx-btn" onclick="fxDeleteItem('${catalog}','${d.id}')">${ICON.trash} Remover</button>
+                  <button class="fx-btn-danger fx-btn" onclick="fxConfirmDeleteItem('${catalog}','${d.id}')">${ICON.trash} Remover</button>
                 </div>`;
       }
     }
