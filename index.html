@@ -2037,28 +2037,6 @@
         <button class="fx-modal-danger-link fx-admin-control" style="margin-top:18px;display:inline-block" onclick="fxConfirmDeleteFixedTab('patrocinados')">Excluir esta aba e todos os cards dela</button>
       </section>
 
-      <section class="fx-tab" id="tab-assistidos">
-        <div class="fx-section-toolbar">
-          <div><h2 class="fx-section-title">Assistidos</h2><p class="fx-section-sub">Filmes, séries e animes já vistos</p></div>
-          <div class="fx-toolbar-right">
-            <input class="fx-input fx-search" autocomplete="off" placeholder="Buscar..." oninput="fxRenderGrid('watched')" id="search-watched">
-            <button class="fx-btn fx-admin-control" onclick="fxOpenForm('watched')">+ Adicionar</button>
-          </div>
-        </div>
-        <button class="fx-filter-toggle" id="filter-toggle-watched" onclick="fxToggleFilterPanel('watched')">
-          <span>Filtros</span><span class="fx-filter-count" id="filter-count-watched" style="display:none"></span>
-          <svg class="fx-filter-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="fx-filter-panel" id="filter-panel-watched">
-          <div class="fx-filter-row">
-            <div class="fx-chip-row" id="watched-type-filter"></div>
-            <div class="fx-chip-row" id="watched-status-filter"></div>
-          </div>
-        </div>
-        <div class="fx-grid" id="grid-watched" data-drag-container data-drag-group="cat-watched"></div>
-        <button class="fx-modal-danger-link fx-admin-control" style="margin-top:18px;display:inline-block" onclick="fxConfirmDeleteFixedTab('assistidos')">Excluir esta aba e todos os cards dela</button>
-      </section>
-
       <section class="fx-tab" id="tab-jogados">
         <div class="fx-section-toolbar">
           <div><h2 class="fx-section-title">Jogados</h2><p class="fx-section-sub">Catálogo de jogatinas na live</p></div>
