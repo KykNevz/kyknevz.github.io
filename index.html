@@ -3494,7 +3494,7 @@
       platform: ''
     },
     schedule: {
-      filter: 'Anteriores'
+      filter: 'Próximas'
     }
   };
 
@@ -3778,6 +3778,81 @@
   }
 
 
+  /* ---------- Fuso horário e classificação das transmissões ----------
+     Referência única: America/Sao_Paulo. Os horários são guardados como
+     instante absoluto (ISO com "Z"); o campo datetime-local é lido/mostrado
+     SEMPRE em horário de Brasília, nunca no fuso do navegador nem em UTC.
+     (O Brasil não tem horário de verão desde 2019, então Brasília = UTC-03:00.) */
+  const FX_TZ = 'America/Sao_Paulo';
+  const FX_TZ_OFFSET = '-03:00';
+  /** Sem horário de término cadastrado, considera a live em andamento por até 4h. */
+  const FX_DEFAULT_SCHED_MS = 4 * 3600000;
+
+  /** ISO (UTC) -> valor "YYYY-MM-DDTHH:mm" em Brasília, para o datetime-local. */
+  function fxIsoToInput(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return new Intl.DateTimeFormat('sv-SE', {
+      timeZone: FX_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).format(d).replace(' ', 'T');
+  }
+
+  /** Valor do datetime-local (Brasília) -> ISO (UTC). Devolve null se inválido. */
+  function fxInputToIso(v) {
+    const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(v || '');
+    if (!m) return null;
+    const d = new Date(m[1] + 'T' + m[2] + ':00' + FX_TZ_OFFSET);
+    return isNaN(d) ? null : d.toISOString();
+  }
+
+  /** 'upcoming' | 'live' | 'past' | 'invalid'. Em andamento (começou e não
+      terminou) NÃO é anterior. Sem data válida => 'invalid' (só aparece em "Todos",
+      no fim da lista). Como compara instantes absolutos, atravessar a meia-noite
+      não exige tratamento especial. */
+  function fxSchedStatus(s, now) {
+    now = now || new Date();
+    const st = s && s.datetime ? new Date(s.datetime) : null;
+    if (!st || isNaN(st)) return 'invalid';
+    let en = s.endDatetime ? new Date(s.endDatetime) : null;
+    if (!en || isNaN(en) || en <= st) en = new Date(st.getTime() + FX_DEFAULT_SCHED_MS);
+    return now < st ? 'upcoming' : (now < en ? 'live' : 'past');
+  }
+
+  /* ---------- Busca de jogos (IGDB + SteamGridDB via Supabase Edge Function) ----------
+     O navegador só fala com a função "game-lookup" usando a sessão do admin; os
+     segredos (Twitch/SteamGridDB) ficam no Supabase e nunca chegam aqui.
+     Sempre devolve { ok:true, ... } ou { ok:false, code, message } — nunca lança. */
+  const FX_GAME_FN = 'game-lookup';
+
+  async function fxGameApi(action, params) {
+    if (!_supabase) return { ok: false, code: 'no_client', message: 'Supabase não está configurado neste site.' };
+    if (!fxIsAdmin()) return { ok: false, code: 'unauthorized', message: 'Entre no modo admin para pesquisar jogos.' };
+    try {
+      const { data, error } = await _supabase.functions.invoke(FX_GAME_FN, { body: Object.assign({ action }, params || {}) });
+      if (error) {
+        let body = null;
+        try { body = error.context && (await error.context.json()); } catch (e) { /* corpo não-JSON */ }
+        if (body && body.ok === false && body.message) return body;
+        return { ok: false, code: 'network', message: 'Não foi possível falar com a busca de jogos (função não implantada ou sem conexão).' };
+      }
+      return data && typeof data === 'object' ? data : { ok: false, code: 'invalid_response', message: 'Resposta inesperada da busca de jogos.' };
+    } catch (e) {
+      return { ok: false, code: 'network', message: 'Falha de rede ao consultar a busca de jogos.' };
+    }
+  }
+
+  /** Espera o usuário parar de digitar antes de chamar a API. Só a última chamada executa. */
+  function fxDebounce(fn, ms) {
+    let t = null;
+    return function () {
+      const args = arguments;
+      clearTimeout(t);
+      t = setTimeout(() => fn.apply(null, args), ms || 400);
+    };
+  }
+
   /* ---------- Hero / countdown ---------- */
   const FX_TWITCH_URL = 'https://www.twitch.tv/FractalVox';
   const FX_YOUTUBE_LIVE_URL = 'https://www.youtube.com/@fractalvox/live';
@@ -3930,9 +4005,11 @@
     }
 
     const dayName = target.toLocaleDateString('pt-BR', {
+      timeZone: FX_TZ,
       weekday: 'long'
     });
     const timeStr = target.toLocaleTimeString('pt-BR', {
+      timeZone: FX_TZ,
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -3953,7 +4030,7 @@
 
   function fxOpenHeroForm() {
     const h = state.hero || {};
-    const dtVal = h.datetime ? h.datetime.slice(0, 16) : '';
+    const dtVal = fxIsoToInput(h.datetime);
     const imgs = (h.images && typeof h.images === 'object') ? h.images : {
       vertical: h.image || '',
       horizontal: '',
@@ -4001,7 +4078,7 @@
     if (!title || !dt) return;
     const images = fxImageVariantsValue('f-hero-image');
     const imagePick = (document.getElementById('f-hero-image-pick') || {}).value || 'horizontal';
-    const newDatetime = new Date(dt).toISOString();
+    const newDatetime = fxInputToIso(dt);
     const prev = state.hero || {};
     // Se for a MESMA live (só corrigindo título/imagem), preserva o "ao vivo"
     // já confirmado — senão editar o hero no meio da transmissão voltaria ela
@@ -4070,22 +4147,26 @@
 
   function fxFormatSchedDate(iso) {
     const d = new Date(iso);
+    if (!iso || isNaN(d)) return 'Data não definida';
     const dayName = d.toLocaleDateString('pt-BR', {
+      timeZone: FX_TZ,
       weekday: 'long'
     });
     const dateStr = d.toLocaleDateString('pt-BR', {
+      timeZone: FX_TZ,
       day: '2-digit',
       month: 'long'
     });
     const timeStr = d.toLocaleTimeString('pt-BR', {
+      timeZone: FX_TZ,
       hour: '2-digit',
       minute: '2-digit'
     });
     return `${dayName.charAt(0).toUpperCase()}${dayName.slice(1)}, ${dateStr} às ${timeStr}`;
   }
 
-  function fxIsSchedPast(iso) {
-    return new Date(iso) <= new Date();
+  function fxIsSchedPast(iso) { // aceita a entrada inteira (preferido) ou só o ISO de início
+    return fxSchedStatus(typeof iso === 'object' ? iso : { datetime: iso }) === 'past';
   }
 
   /** Ordem fixa Anteriores | Todos | Próximas (em vez da ordem padrão "Todos"
@@ -4093,16 +4174,7 @@
   function fxRenderSchedFilter() {
     const el = document.getElementById('sched-filter');
     if (!el) return;
-    const opts = [{
-      value: 'Anteriores',
-      label: 'Anteriores'
-    }, {
-      value: '',
-      label: 'Todos'
-    }, {
-      value: 'Próximas',
-      label: 'Próximas'
-    }];
+    const opts = [{ value: 'Próximas', label: 'Próximas' }, { value: '', label: 'Todos' }, { value: 'Anteriores', label: 'Anteriores' }];
     el.innerHTML = opts.map(o =>
       `<div class="fx-chip${fxFilters.schedule.filter===o.value?' active':''}" onclick="fxSetSchedFilter('${o.value}')">${esc(o.label)}</div>`
     ).join('');
@@ -4126,11 +4198,15 @@
     if (!el) return;
     const isAdmin = fxIsAdmin();
     const now = new Date();
-    let items = (state.schedule || []).filter(s => s.datetime && fxCatalogById(s.catalog, s.refId));
+    let items = (state.schedule || []).filter(s => fxCatalogById(s.catalog, s.refId));
     const filter = fxFilters.schedule.filter;
-    if (filter === 'Próximas') items = items.filter(s => new Date(s.datetime) > now);
-    else if (filter === 'Anteriores') items = items.filter(s => new Date(s.datetime) <= now);
-    items = items.slice().sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+    const st = x => fxSchedStatus(x, now);
+    const ts = x => (st(x) === 'invalid' ? Infinity : new Date(x.datetime).getTime());
+    if (filter === 'Próximas') items = items.filter(s => st(s) === 'upcoming' || st(s) === 'live');
+    else if (filter === 'Anteriores') items = items.filter(s => st(s) === 'past');
+    // Próximas e Todos: do mais próximo ao mais distante (sem data válida vai pro fim);
+    // Anteriores: da mais recente para a mais antiga.
+    items = items.slice().sort((a, b) => filter === 'Anteriores' ? ts(b) - ts(a) : ts(a) - ts(b));
 
     if (!items.length) {
       el.innerHTML = `<div class="fx-sched-empty">
@@ -4142,7 +4218,7 @@
 
     el.innerHTML = items.map(s => {
       const item = fxCatalogById(s.catalog, s.refId);
-      const past = fxIsSchedPast(s.datetime);
+      const past = fxIsSchedPast(s);
       const tpl = fxTemplateFor(s.catalog);
       const tagColor = s.catalog === 'sponsored' ? '#E0A83E' : s.catalog === 'quick' ? '#E8967D' : (STATUS_COLORS[
         item.status] || '#7FA8C9');
@@ -4184,7 +4260,7 @@
                     </div>
                   </div>
                   <div class="fx-sched-info">
-                    <div class="fx-sched-eyebrow" style="color:${past?'var(--text-3)':'var(--accent)'}">${past ? 'Já rolou' : 'Em breve'}</div>
+                    <div class="fx-sched-eyebrow" style="color:${past?'var(--text-3)':'var(--accent)'}">${past ? 'Já rolou' : (fxSchedStatus(s) === 'live' ? 'Em andamento' : (fxSchedStatus(s) === 'invalid' ? 'Sem data' : 'Em breve'))}</div>
                     <h3 class="fx-sched-title" onclick="fxOpenDetail('${s.catalog}','${item.id}','${s.id}')">${esc(item.title)}</h3>
                     <div class="fx-sched-date">${ICON.clock} ${esc(fxFormatSchedDate(s.datetime))}</div>
                     <div class="fx-sched-actions">${actionsHtml}</div>
@@ -4206,7 +4282,7 @@
   function fxRemoveScheduleGuarded(id, closeAfter) {
     const s = (state.schedule || []).find(x => x.id === id);
     if (!s) return;
-    if (fxIsSchedPast(s.datetime)) {
+    if (fxIsSchedPast(s)) {
       fxConfirmAction(
         'Excluir esta transmissão do histórico?',
         'Ela já aconteceu — excluir remove o registro e qualquer link de VOD salvo aqui. Essa ação não pode ser desfeita.',
@@ -4227,7 +4303,7 @@
     const s = (state.schedule || []).find(x => x.id === id);
     if (!s) return;
     const item = fxCatalogById(s.catalog, s.refId);
-    const dtVal = s.datetime ? s.datetime.slice(0, 16) : '';
+    const dtVal = fxIsoToInput(s.datetime);
     fxOpenModal(`<div class="fx-modal-body">
               <h3 class="fx-modal-title">Editar agendamento</h3>
               <p class="fx-modal-sinopse" style="margin-bottom:14px">${esc((item&&item.title)||'Item removido')}</p>
@@ -4251,7 +4327,7 @@
     if (!s) return;
     const dt = (document.getElementById('f-schedentry-datetime') || {}).value || '';
     if (!dt) return;
-    s.datetime = new Date(dt).toISOString();
+    s.datetime = fxInputToIso(dt);
     s.twitchUrl = ((document.getElementById('f-schedentry-twitch') || {}).value || '').trim();
     s.youtubeUrl = ((document.getElementById('f-schedentry-youtube') || {}).value || '').trim();
     fxSave('schedule');
@@ -4376,7 +4452,7 @@
       id: uid(),
       catalog: 'quick',
       refId: id,
-      datetime: new Date(dt).toISOString(),
+      datetime: fxInputToIso(dt),
       twitchUrl: '',
       youtubeUrl: ''
     });
@@ -4407,7 +4483,7 @@
       id: uid(),
       catalog: cat,
       refId: id,
-      datetime: new Date(dt).toISOString(),
+      datetime: fxInputToIso(dt),
       twitchUrl: '',
       youtubeUrl: ''
     });
@@ -4431,7 +4507,7 @@
       id: uid(),
       catalog: cat,
       refId: item.id,
-      datetime: new Date(dt).toISOString(),
+      datetime: fxInputToIso(dt),
       twitchUrl: '',
       youtubeUrl: ''
     });
