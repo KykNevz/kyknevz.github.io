@@ -542,14 +542,29 @@
   }
 
   /* Colapsa suavemente com max-height em vez de display:none, pra ter transição */
+  .fx-games-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 12px 14px;
+    align-items: end;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+  }
+  .fx-games-filters .fx-filter-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .fx-games-filters .fx-filter-label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+  .fx-games-filters .fx-select, .fx-games-filters .fx-input { width: 100%; box-sizing: border-box; }
+  .fx-games-filters .fx-filter-years { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fx-games-filters .fx-filter-clear { justify-self: start; }
   .fx-filter-panel {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.25s ease;
   }
 
-  .fx-filter-panel.open {
-    max-height: 300px;
+    .fx-filter-panel.open {
+    max-height: 640px;
     margin-bottom: 16px;
   }
 
@@ -1238,6 +1253,13 @@
 
   .fx-sched-btn-youtube:hover {
     background: rgba(226, 75, 74, 0.12);
+  }
+  .fx-sched-btn-kick {
+    border-color: #53FC18;
+    color: #53FC18;
+  }
+  .fx-sched-btn-kick:hover {
+    background: rgba(83, 252, 24, 0.12);
   }
 
   .fx-sched-btn-pending {
@@ -3277,23 +3299,27 @@
     return true;
   }
 
-  function fxSelectHtml(id, label, options, value, extra) {
-    return `<select class="fx-select" aria-label="${esc(label)}" onchange="fxSetGamesFilter('${id}',this.value)"><option value="">${esc(label)}</option>${options.map(o => `<option value="${esc(o)}"${o === value ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  function fxSelectHtml(id, label, options, value) {
+    return `<label class="fx-filter-field"><span class="fx-filter-label">${esc(label)}</span>
+      <select class="fx-select" onchange="fxSetGamesFilter('${id}',this.value)"><option value="">Todos</option>${options.map(o => `<option value="${esc(o)}"${o === value ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`;
   }
 
   function fxRenderGamesFilters() {
     const el = document.getElementById('games-filters');
     if (!el) return;
     const f = fxGamesFilter;
-    el.innerHTML = `<div class="fx-filter-row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    el.innerHTML = `<div class="fx-games-filters">
         ${fxSelectHtml('status', 'Status', GAME_TAGS_ALL, f.status)}
         ${fxSelectHtml('genre', 'Gênero', fxDistinct('genres'), f.genre)}
         ${fxSelectHtml('theme', 'Tema', fxDistinct('themes'), f.theme)}
         ${fxSelectHtml('platform', 'Plataforma', fxDistinct('platforms'), f.platform)}
         ${fxSelectHtml('mode', 'Modo de jogo', fxDistinct('modes'), f.mode)}
-        <input class="fx-input" type="number" min="1970" max="2100" style="width:96px" placeholder="De (ano)" aria-label="Lançado a partir do ano" value="${esc(f.from)}" onchange="fxSetGamesFilter('from',this.value)">
-        <input class="fx-input" type="number" min="1970" max="2100" style="width:96px" placeholder="Até (ano)" aria-label="Lançado até o ano" value="${esc(f.to)}" onchange="fxSetGamesFilter('to',this.value)">
-        <button class="fx-btn fx-btn-ghost fx-btn-sm" onclick="fxClearGamesFilters()">Limpar filtros</button>
+        <div class="fx-filter-field"><span class="fx-filter-label">Lançamento (ano)</span>
+          <div class="fx-filter-years">
+            <input class="fx-input" type="number" min="1970" max="2100" placeholder="De" aria-label="Lançado a partir do ano" value="${esc(f.from)}" onchange="fxSetGamesFilter('from',this.value)">
+            <input class="fx-input" type="number" min="1970" max="2100" placeholder="Até" aria-label="Lançado até o ano" value="${esc(f.to)}" onchange="fxSetGamesFilter('to',this.value)">
+          </div></div>
+        <button class="fx-btn fx-btn-ghost fx-filter-clear" onclick="fxClearGamesFilters()">Limpar filtros</button>
       </div>`;
     const n = ['status', 'genre', 'theme', 'platform', 'mode', 'from', 'to'].filter(k => f[k]).length;
     fxUpdateFilterCount('games', n);
@@ -3721,6 +3747,7 @@
 
 /* ---------- Hero / countdown ---------- */
   const FX_TWITCH_URL = 'https://www.twitch.tv/FractalVox';
+  const FX_KICK_URL = 'https://kick.com/fractalvox';
   const FX_YOUTUBE_LIVE_URL = 'https://www.youtube.com/@fractalvox/live';
 
   /** Serviço de terceiros (não-oficial) que expõe se um canal da Twitch está
@@ -3853,17 +3880,15 @@
 
       let actionsHtml = '';
       if (past) {
-        if (s.twitchUrl) actionsHtml +=
-          `<a class="fx-sched-btn fx-sched-btn-twitch" href="${esc(s.twitchUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir na Twitch</a>`;
-        if (s.youtubeUrl) actionsHtml +=
-          `<a class="fx-sched-btn fx-sched-btn-youtube" href="${esc(s.youtubeUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir no YouTube</a>`;
-        if (!s.twitchUrl && !s.youtubeUrl) actionsHtml +=
+        // Depois que a live acontece só existe o VOD do YouTube (Twitch e Kick não guardam).
+        actionsHtml = s.youtubeUrl && /^https:\/\//i.test(s.youtubeUrl) ?
+          `<a class="fx-sched-btn fx-sched-btn-youtube" href="${esc(s.youtubeUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir VOD no YouTube</a>` :
           `<span class="fx-sched-btn fx-sched-btn-pending">VOD em breve</span>`;
       } else {
-        // Enquanto ainda não rolou, os dois botões sempre levam pro canal —
-        // não faz sentido pedir um link específico de algo que ainda não existe.
+        // Enquanto ainda não rolou, os botões levam para o canal em cada plataforma.
         actionsHtml =
           `<a class="fx-sched-btn fx-sched-btn-twitch" href="${FX_TWITCH_URL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir na Twitch</a>
+                <a class="fx-sched-btn fx-sched-btn-kick" href="${FX_KICK_URL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir na Kick</a>
                 <a class="fx-sched-btn fx-sched-btn-youtube" href="${FX_YOUTUBE_LIVE_URL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir no YouTube</a>`;
       }
 
@@ -3936,8 +3961,7 @@
               <div class="fx-form-grid">
                 <div class="fx-form-full"><label class="fx-field-label">Data e hora *</label><input class="fx-input" autocomplete="off" type="datetime-local" id="f-schedentry-datetime" value="${dtVal}"></div>
                 <div class="fx-form-full"><label class="fx-field-label">Término (opcional — define quando a live deixa de estar em andamento)</label><input class="fx-input" autocomplete="off" type="datetime-local" id="f-schedentry-end" value="${fxIsoToInput(s.endDatetime)}"></div>
-                <div class="fx-form-full"><label class="fx-field-label">Link do VOD na Twitch (opcional — só depois que já rolou)</label><input class="fx-input" autocomplete="off" id="f-schedentry-twitch" value="${esc(s.twitchUrl||'')}" placeholder="https://twitch.tv/..."></div>
-                <div class="fx-form-full"><label class="fx-field-label">Link do VOD no YouTube (opcional — só depois que já rolou)</label><input class="fx-input" autocomplete="off" id="f-schedentry-youtube" value="${esc(s.youtubeUrl||'')}" placeholder="https://youtube.com/..."></div>
+                <div class="fx-form-full"><label class="fx-field-label">Link do VOD no YouTube (opcional — preencha depois que a live acontecer)</label><input class="fx-input" autocomplete="off" id="f-schedentry-youtube" value="${esc(s.youtubeUrl||'')}" placeholder="https://youtube.com/..."></div>
               </div>
               <div class="fx-modal-actions">
                 <button class="fx-btn" onclick="fxSubmitSchedEntryForm('${id}')">Salvar</button>
@@ -3959,8 +3983,8 @@
     if (endRaw && (!endIso || new Date(endIso) <= new Date(startIso))) { alert('O término precisa ser depois do início.'); return; }
     s.datetime = startIso;
     s.endDatetime = endIso || null;
-    s.twitchUrl = ((document.getElementById('f-schedentry-twitch') || {}).value || '').trim();
     s.youtubeUrl = ((document.getElementById('f-schedentry-youtube') || {}).value || '').trim();
+    if (s.youtubeUrl && !/^https:\/\//i.test(s.youtubeUrl)) { alert('O link do YouTube precisa começar com https://'); return; }
     fxSave('schedule');
     fxRenderSchedule();
     fxRenderHero();
