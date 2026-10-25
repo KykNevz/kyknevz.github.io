@@ -2025,34 +2025,22 @@
         <div class="fx-sched-list" id="fx-sched-list"></div>
       </section>
 
-      <section class="fx-tab" id="tab-patrocinados">
-        <div class="fx-section-toolbar">
-          <div><h2 class="fx-section-title">Patrocinados</h2><p class="fx-section-sub">Conteúdos em breve na live, patrocinados pela galera</p></div>
-          <div class="fx-toolbar-right">
-            <input class="fx-input fx-search" autocomplete="off" placeholder="Buscar..." oninput="fxRenderGrid('sponsored')" id="search-sponsored">
-            <button class="fx-btn fx-admin-control" onclick="fxOpenForm('sponsored')">+ Adicionar</button>
-          </div>
-        </div>
-        <div class="fx-grid" id="grid-sponsored" data-drag-container data-drag-group="cat-sponsored"></div>
-        <button class="fx-modal-danger-link fx-admin-control" style="margin-top:18px;display:inline-block" onclick="fxConfirmDeleteFixedTab('patrocinados')">Excluir esta aba e todos os cards dela</button>
-      </section>
 
-      <section class="fx-tab" id="tab-jogados">
+
+      <section class="fx-tab" id="tab-jogos">
         <div class="fx-section-toolbar">
-          <div><h2 class="fx-section-title">Jogados</h2><p class="fx-section-sub">Catálogo de jogatinas na live</p></div>
+          <div><h2 class="fx-section-title">JOGOS</h2><p class="fx-section-sub">Biblioteca de jogos — usada também no Cronograma</p></div>
           <div class="fx-toolbar-right">
-            <input class="fx-input fx-search" autocomplete="off" placeholder="Buscar..." oninput="fxRenderGrid('games')" id="search-games">
-            <button class="fx-btn fx-admin-control" onclick="fxOpenForm('games')">+ Adicionar</button>
+            <input class="fx-input fx-search" autocomplete="off" placeholder="Buscar por título..." aria-label="Buscar jogo por título" oninput="fxOnGamesSearch(this.value)" id="search-games">
+            <button class="fx-btn fx-admin-control" onclick="fxOpenGameForm()">+ Novo jogo</button>
           </div>
         </div>
         <button class="fx-filter-toggle" id="filter-toggle-games" onclick="fxToggleFilterPanel('games')">
           <span>Filtros</span><span class="fx-filter-count" id="filter-count-games" style="display:none"></span>
           <svg class="fx-filter-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
-        <div class="fx-filter-panel" id="filter-panel-games">
-          <div class="fx-chip-row" id="games-status-filter"></div>
-        </div>
-        <div class="fx-grid" id="grid-games" data-drag-container data-drag-group="cat-games"></div>
+        <div class="fx-filter-panel" id="filter-panel-games"><div id="games-filters"></div></div>
+        <div class="fx-grid" id="grid-games"></div>
       </section>
 
       <section class="fx-tab" id="tab-redes">
@@ -2065,30 +2053,6 @@
         <div class="fx-social-list" id="list-socials" data-drag-container data-drag-group="socials"></div>
       </section>
 
-      <section class="fx-tab" id="tab-conteudos">
-        <div class="fx-section-toolbar">
-          <div><h2 class="fx-section-title">Conteúdos</h2><p class="fx-section-sub">Vídeos e cortes gravados para as redes</p></div>
-          <div class="fx-toolbar-right">
-            <input class="fx-input fx-search" autocomplete="off" placeholder="Buscar..." oninput="fxRenderContent()" id="search-content">
-            <button class="fx-btn fx-admin-control" onclick="fxOpenForm('content')">+ Adicionar</button>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-          <button class="fx-filter-toggle" id="filter-toggle-content" onclick="fxToggleFilterPanel('content')" style="margin-bottom:0">
-            <span>Filtros</span><span class="fx-filter-count" id="filter-count-content" style="display:none"></span>
-            <svg class="fx-filter-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
-          <div class="fx-view-toggle">
-            <button class="fx-view-btn active" id="content-view-grid" onclick="fxSetContentView('grid')">Grade</button>
-            <button class="fx-view-btn" id="content-view-board" onclick="fxSetContentView('board')">Board</button>
-          </div>
-        </div>
-        <div class="fx-filter-panel" id="filter-panel-content">
-          <div class="fx-chip-row" id="content-platform-filter" style="margin-bottom:16px"></div>
-        </div>
-        <div class="fx-grid" id="grid-content" data-drag-container data-drag-group="cat-content"></div>
-        <div class="fx-board" id="board-content" style="display:none"></div>
-      </section>
 
     </main>
 
@@ -2211,12 +2175,6 @@
     }
   };
 
-  function fxPlatformColor(p) {
-    if (PLATFORM_COLORS[p]) return PLATFORM_COLORS[p];
-    let h = 0;
-    for (const c of p) h = (h * 31 + c.charCodeAt(0)) % 360;
-    return `hsl(${h},55%,55%)`;
-  }
 
   const STATUS_COLORS = {
     'Assistido': '#8FBF6F',
@@ -2228,6 +2186,7 @@
     'Jogando': '#7FA8C9',
     'Jogado': '#8C7060',
     'Backlog': '#8C7060',
+    'Planejado': '#B58CC9',
     'Abandonado': '#D65B4A',
     'Ideia': '#8C7060',
     'Em breve': '#E0A83E',
@@ -2235,7 +2194,7 @@
     'Edição': '#E0A83E',
     'Finalizado': '#8FBF6F'
   };
-  const GAME_TAGS = ['Zerado', 'Jogando', 'Abandonado', 'Jogado'];
+  
 
   const state = {
     sponsored: [],
@@ -2370,16 +2329,12 @@
   const FX_STORAGE_PREFIX = 'fractalvox:';
   const FX_PUBLIC_KEYS = [
     'sponsored', 'watched', 'games', 'schedule', 'platforms', 'hero', 'socials', 'tabVisibility',
-    'tabOrder', 'templates', 'quick', 'customTabs', 'deletedTabs'
+    'tabOrder', 'templates', 'quick', 'customTabs', 'deletedTabs', 'heroSel'
   ];
 
   /** As únicas abas fixas que podem ser apagadas de vez (id da aba -> chave
       dos dados dela). Cronograma, Jogados, Minhas Redes e Conteúdos
       continuam sempre presentes. */
-  const FX_FIXED_DELETABLE = {
-    patrocinados: 'sponsored',
-    assistidos: 'watched'
-  };
   const FX_PRIVATE_KEYS = ['content'];
 
   function fxLocalGet(key) {
@@ -2401,76 +2356,17 @@
     }
   }
 
-  /** Aplica uma linha vinda do Supabase (carregamento inicial ou evento
-      em tempo real) ao estado da página e redesenha só a parte afetada. */
+
+  /** Aplica uma linha vinda do Supabase (carregamento ou tempo real) e redesenha só o afetado. */
   function fxApplyRemoteRow(key, value) {
     if (value == null) return;
     state[key] = value;
     fxLocalSet(key, value);
-    switch (key) {
-      case 'hero':
-        fxRenderHero();
-        break;
-      case 'schedule':
-        fxRenderSchedule();
-        break;
-      case 'platforms':
-        fxRenderPlatformFilter();
-        break;
-      case 'socials':
-        fxRenderSocials();
-        break;
-      case 'tabVisibility':
-        fxRenderNav();
-        break;
-      case 'sponsored':
-        fxRenderGrid('sponsored');
-        break;
-      case 'watched':
-        fxRenderGrid('watched');
-        fxRenderWatchedFilters();
-        break;
-      case 'games':
-        fxRenderGrid('games');
-        fxRenderGamesFilters();
-        break;
-      case 'content':
-        fxRenderGrid('content');
-        break;
-      case 'quick':
-        fxRenderSchedule();
-        break;
-      case 'tabOrder':
-        fxRenderNav();
-        break;
-      case 'templates':
-        fxRenderWatchedFilters();
-        fxRenderGamesFilters();
-        break;
-      case 'customTabs':
-        // Uma aba pode ter sido criada ou apagada em outro navegador/celular:
-        // garante que as sections existam pras abas atuais e some com a
-        // section de qualquer aba que não exista mais.
-        fxMountAllCustomTabs();
-        document.querySelectorAll('.fx-tab[id^="tab-tab_"]').forEach(sec => {
-          const id = sec.id.slice(4);
-          if (!fxCustomTabIds().includes(id)) sec.remove();
-        });
-        fxRenderNav();
-        break;
-      case 'deletedTabs':
-        // Uma aba fixa (Patrocinados/Assistidos) pode ter sido apagada de
-        // vez em outro navegador/celular: some com a section aqui também.
-        (state.deletedTabs || []).forEach(id => {
-          const section = document.getElementById('tab-' + id);
-          if (section) section.remove();
-        });
-        if (fxCurrentTab && (state.deletedTabs || []).includes(fxCurrentTab)) fxSwitchTab('cronograma');
-        fxRenderNav();
-        break;
-      default:
-        if (fxCustomTabIds().includes(key)) fxRenderGrid(key);
-    }
+    if (key === 'hero' || key === 'heroSel') fxRenderHero();
+    else if (key === 'schedule') { fxRenderSchedule(); fxRenderHero(); }
+    else if (key === 'socials') fxRenderSocials();
+    else if (key === 'games') { fxRenderGames(); fxRenderSchedule(); fxRenderHero(); }
+    else if (key === 'tabVisibility' || key === 'tabOrder') fxRenderNav();
   }
 
   async function fxLoad() {
@@ -2525,43 +2421,25 @@
     }
     if (!state.tabVisibility) state.tabVisibility = {};
     if (!state.quick) state.quick = [];
-    if (!state.customTabs) state.customTabs = [];
-    if (!state.deletedTabs) state.deletedTabs = [];
-    // As sections de Patrocinados/Assistidos existem fixas no HTML da
-    // página; se a aba já foi apagada de vez antes, tira a section do DOM
-    // logo no carregamento (senão ela ficaria escondida mas presente).
-    state.deletedTabs.forEach(id => {
-      const section = document.getElementById('tab-' + id);
-      if (section) section.remove();
-    });
-    // Fallback só usado quando o Supabase não respondeu: os arrays de cards
-    // das abas personalizadas usam uma chave dinâmica (o id da aba), então
-    // não estão em FX_PUBLIC_KEYS e precisam ser resgatados do cache local
-    // à parte, um por um.
-    state.customTabs.forEach(t => {
-      if (!state[t.id]) {
-        const local = fxLocalGet(t.id);
-        state[t.id] = local != null ? local : [];
-      }
-    });
-    if (!state.tabOrder || !state.tabOrder.length) state.tabOrder = fxAllTabDefs().map(t => t.id);
-    if (!state.templates) state.templates = fxCloneDefaultTemplates();
+    // Aba 'jogados' virou 'jogos': migra ordem e visibilidade já salvas.
+    state.tabOrder = (state.tabOrder || []).map(t => t === 'jogados' ? 'jogos' : t).filter(t => TABS.some(x => x.id === t));
+    if (state.tabVisibility && 'jogados' in state.tabVisibility) { state.tabVisibility.jogos = state.tabVisibility.jogados; delete state.tabVisibility.jogados; }
+    if (!state.tabOrder.length) state.tabOrder = TABS.map(t => t.id);
 
-    fxMountAllCustomTabs();
+    
     fxMigrateLegacySchedule();
     fxApplyAdminUI();
     fxRenderNav();
     fxRenderHero();
     fxRenderSchedule();
     fxRenderSchedFilter();
-    fxRenderWatchedFilters();
-    fxRenderGamesFilters();
-    fxRenderPlatformFilter();
+    
+    
+    
     fxRenderSocials();
     fxInitFilterPanels();
     fxInitDragDrop();
-    ['sponsored', 'watched', 'games', 'content', ...fxCustomTabIds()].forEach(fxRenderGrid);
-    fxSetContentView(fxLocalGet('content-view') || 'grid');
+    fxRenderGames();
     setInterval(fxRenderHero, 1000);
     setInterval(fxRenderSchedule, 60000);
   }
@@ -2628,7 +2506,7 @@
        fx-drag-handle) em cada card. Antes só "content" era redesenhado aqui,
        então Patrocinados/Assistidos/Jogados ficavam sem alça de arraste até
        um F5 — por isso não dava pra reordenar os cards dessas abas. */
-    ['sponsored', 'watched', 'games', 'content', ...fxCustomTabIds()].forEach(fxRenderGrid);
+    fxRenderGames();
   }
 
   // Clique "secreto": 5 cliques rápidos no logo abrem a tela de login do admin.
@@ -2700,9 +2578,7 @@
               <p class="fx-modal-sinopse" style="margin-bottom:16px">Suas edições já são salvas direto no banco de dados e aparecem para todo mundo na hora — não é mais preciso publicar nada manualmente. Para trocar a senha de admin, use o painel do Supabase (Authentication → Users).</p>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <button class="fx-btn-ghost fx-btn" onclick="fxOpenTabManager()">Gerenciar abas</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxOpenNewTabForm()">+ Nova aba</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxOpenTemplateManager()">Templates de card</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxExportFullBackup()">Exportar backup completo (com Conteúdos)</button>
+                <button class="fx-btn-ghost fx-btn" onclick="fxExportFullBackup()">Exportar backup completo</button>
                 <button class="fx-btn-ghost fx-btn" onclick="document.getElementById('fx-import-input').click()">Importar dados de um arquivo (restaura no banco)</button>
                 <button class="fx-btn-danger fx-btn" onclick="fxLogoutAdmin()">Sair do modo admin</button>
               </div>
@@ -2727,7 +2603,7 @@
   /** Backup completo (inclusive Conteúdos) para você mesmo guardar ou mover para outro navegador/computador. */
   function fxExportFullBackup() {
     const data = {};
-    [...FX_PUBLIC_KEYS, ...FX_PRIVATE_KEYS, ...fxCustomTabIds()].forEach(k => data[k] = state[k]);
+    [...FX_PUBLIC_KEYS, ...FX_PRIVATE_KEYS].forEach(k => data[k] = state[k]);
     const stamp = new Date().toISOString().slice(0, 10);
     fxDownloadJson(`fractalvox-backup-${stamp}.json`, data);
   }
@@ -2758,22 +2634,14 @@
           importedCount++;
         }
       });
-      // As abas personalizadas (customTabs, já importado acima) guardam os
-      // cards numa chave dinâmica por aba — importa cada uma também.
-      fxCustomTabIds().forEach(id => {
-        if (data[id] != null) {
-          state[id] = data[id];
-          fxSave(id);
-        }
-      });
-      fxMountAllCustomTabs();
+      
       fxRenderHero();
       fxRenderSchedule();
-      fxRenderWatchedFilters();
-      fxRenderGamesFilters();
-      fxRenderPlatformFilter();
+      
+      
+      
       fxRenderNav();
-      ['sponsored', 'watched', 'games', 'content', ...fxCustomTabIds()].forEach(fxRenderGrid);
+      fxRenderGames();
       fxOpenModal(`<div class="fx-modal-body">
               <h3 class="fx-modal-title">Importado com sucesso</h3>
               <p class="fx-modal-sinopse">${importedCount} categoria${importedCount === 1 ? '' : 's'} atualizada${importedCount === 1 ? '' : 's'} a partir do arquivo.</p>
@@ -2786,33 +2654,7 @@
   }
 
   /* ---------- Nav ---------- */
-  const TABS = [{
-      id: 'cronograma',
-      label: 'Cronograma'
-    },
-    {
-      id: 'patrocinados',
-      label: 'Patrocinados',
-      soon: 'Em breve'
-    },
-    {
-      id: 'assistidos',
-      label: 'Assistidos'
-    },
-    {
-      id: 'jogados',
-      label: 'Jogados'
-    },
-    {
-      id: 'redes',
-      label: 'Minhas Redes'
-    },
-    {
-      id: 'conteudos',
-      label: 'Conteúdos',
-      adminOnly: true
-    }
-  ];
+  const TABS = [{ id: 'cronograma', label: 'Cronograma' }, { id: 'jogos', label: 'JOGOS' }, { id: 'redes', label: 'Minhas Redes' }];
 
   let fxCurrentTab = 'cronograma';
 
@@ -2825,16 +2667,9 @@
   /** As abas fixas (TABS) mais as abas que o admin criou (state.customTabs).
       Usado em todo lugar que precisa "todas as abas que existem hoje". */
   function fxAllTabDefs() {
-    return TABS.filter(t => !(state.deletedTabs || []).includes(t.id)).concat((state.customTabs || []).map(t => ({
-      id: t.id,
-      label: t.label,
-      custom: true
-    })));
+    return TABS.slice();
   }
 
-  function fxCustomTabIds() {
-    return (state.customTabs || []).map(t => t.id);
-  }
 
   /** Ordem das abas conforme state.tabOrder (editável arrastando, admin). Abas
       novas que ainda não estejam nessa lista (ex: depois de uma atualização
@@ -2859,76 +2694,10 @@
      state.customTabs (chave "customTabs" no Supabase); os cards de cada
      aba ficam em state[tab.id], salvos com a própria chave, do mesmo jeito
      que sponsored/watched/games. */
-  function fxCustomTabSectionHtml(tab) {
-    return `<section class="fx-tab" id="tab-${tab.id}">
-        <div class="fx-section-toolbar">
-          <div><h2 class="fx-section-title">${esc(tab.label)}</h2></div>
-          <div class="fx-toolbar-right">
-            <input class="fx-input fx-search" autocomplete="off" placeholder="Buscar..." oninput="fxRenderGrid('${tab.id}')" id="search-${tab.id}">
-            <button class="fx-btn fx-admin-control" onclick="fxOpenForm('${tab.id}')">+ Adicionar</button>
-          </div>
-        </div>
-        <div class="fx-grid" id="grid-${tab.id}" data-drag-container data-drag-group="cat-${tab.id}"></div>
-        <button class="fx-modal-danger-link fx-admin-control" style="margin-top:18px;display:inline-block" onclick="fxConfirmDeleteCustomTab('${tab.id}')">Excluir esta aba e todos os cards dela</button>
-      </section>`;
-  }
 
-  /** Cria a section no DOM (se ainda não existir) e registra o handler de
-      drag-and-drop dos cards dessa aba — o mesmo que sponsored/watched/games
-      ganham no carregamento. Chamada pra cada aba já existente ao carregar
-      a página, e de novo ao criar uma aba nova. */
-  function fxMountCustomTab(tab) {
-    if (!document.getElementById('tab-' + tab.id)) {
-      document.getElementById('fx-main').insertAdjacentHTML('beforeend', fxCustomTabSectionHtml(tab));
-    }
-    if (!state[tab.id]) state[tab.id] = [];
-    FX_DRAG_HANDLERS['cat-' + tab.id] = ({
-      toContainer
-    }) => {
-      const newOrder = fxContainerIds(toContainer);
-      const idSet = new Set(newOrder);
-      const byId = new Map(state[tab.id].map(it => [it.id, it]));
-      let ptr = 0;
-      state[tab.id] = state[tab.id].map(it => idSet.has(it.id) ? byId.get(newOrder[ptr++]) : it);
-      fxSave(tab.id);
-      fxRenderGrid(tab.id);
-    };
-  }
 
-  function fxMountAllCustomTabs() {
-    (state.customTabs || []).forEach(fxMountCustomTab);
-  }
 
-  function fxOpenNewTabForm() {
-    fxOpenModal(`<div class="fx-modal-body">
-              <h3 class="fx-modal-title">Nova aba</h3>
-              <p class="fx-modal-sinopse" style="margin-bottom:14px">Cria uma aba nova com seu próprio catálogo de cards (título, imagem e descrição, iguais aos outros catálogos). Dá pra ajustar os campos depois em Templates de card.</p>
-              <div class="fx-form-full"><label class="fx-field-label">Nome da aba *</label><input class="fx-input" autocomplete="off" id="f-new-tab-label" placeholder="Ex: Colecionáveis"></div>
-              <div class="fx-modal-actions">
-                <button class="fx-btn" onclick="fxCreateCustomTab()">Criar aba</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxOpenAdminPanel()">Cancelar</button>
-              </div>
-            </div>`, 'nova_aba.tmp');
-  }
 
-  function fxCreateCustomTab() {
-    const input = document.getElementById('f-new-tab-label');
-    const label = ((input && input.value) || '').trim();
-    if (!label) return;
-    const tab = {
-      id: 'tab_' + uid(),
-      label
-    };
-    if (!state.customTabs) state.customTabs = [];
-    state.customTabs.push(tab);
-    state[tab.id] = [];
-    fxSave('customTabs');
-    fxSave(tab.id);
-    fxMountCustomTab(tab);
-    fxRenderNav();
-    fxCloseModal();
-    fxSwitchTab(tab.id);
-  }
 
   /** Modal de confirmação genérico pra ações destrutivas (excluir aba, card,
       rede social...). onConfirmJs é uma STRING com o JS a rodar se a pessoa
@@ -2944,72 +2713,9 @@
             </div>`, 'confirmar.sys');
   }
 
-  function fxConfirmDeleteCustomTab(id) {
-    const tab = (state.customTabs || []).find(t => t.id === id);
-    const count = (state[id] || []).length;
-    fxConfirmAction(
-      `Excluir a aba "${(tab && tab.label) || 'aba'}"?`,
-      `Isso apaga a aba e ${count ? `${count} card${count===1?'':'s'} dela` : 'todos os cards dela'} pra sempre — não dá pra desfazer.`,
-      'Sim, excluir',
-      `fxDeleteCustomTab('${id}')`
-    );
-  }
 
-  function fxDeleteCustomTab(id) {
-    state.customTabs = (state.customTabs || []).filter(t => t.id !== id);
-    state.tabOrder = (state.tabOrder || []).filter(tid => tid !== id);
-    state.schedule = (state.schedule || []).filter(s => s.catalog !== id);
-    state[id] = [];
-    fxSave('customTabs');
-    fxSave('tabOrder');
-    fxSave('schedule');
-    fxSave(id);
-    delete FX_DRAG_HANDLERS['cat-' + id];
-    const section = document.getElementById('tab-' + id);
-    if (section) section.remove();
-    if (fxCurrentTab === id) fxSwitchTab('cronograma');
-    fxRenderNav();
-    fxRenderSchedule();
-    fxCloseModal();
-  }
 
-  /** Exclusão de vez de uma das (poucas) abas fixas que aceitam isso —
-      Patrocinados e Assistidos, ver FX_FIXED_DELETABLE. Diferente da aba
-      personalizada, a section continua existindo no HTML da página, então
-      além de apagar os dados a gente marca em state.deletedTabs (persistido)
-      pra ela nunca mais voltar a aparecer, em nenhum navegador. */
-  function fxConfirmDeleteFixedTab(id) {
-    const tabDef = TABS.find(t => t.id === id);
-    const dataKey = FX_FIXED_DELETABLE[id];
-    if (!tabDef || !dataKey) return;
-    const count = (state[dataKey] || []).length;
-    fxConfirmAction(
-      `Excluir a aba "${tabDef.label}"?`,
-      `Isso apaga a aba e ${count ? `${count} card${count===1?'':'s'} dela` : 'todos os cards dela'} pra sempre, em todos os navegadores — não dá pra desfazer.`,
-      'Sim, excluir',
-      `fxDeleteFixedTab('${id}')`
-    );
-  }
 
-  function fxDeleteFixedTab(id) {
-    const dataKey = FX_FIXED_DELETABLE[id];
-    if (!dataKey) return;
-    if (!state.deletedTabs) state.deletedTabs = [];
-    if (!state.deletedTabs.includes(id)) state.deletedTabs.push(id);
-    state.tabOrder = (state.tabOrder || []).filter(tid => tid !== id);
-    state.schedule = (state.schedule || []).filter(s => s.catalog !== dataKey);
-    state[dataKey] = [];
-    fxSave('deletedTabs');
-    fxSave('tabOrder');
-    fxSave('schedule');
-    fxSave(dataKey);
-    const section = document.getElementById('tab-' + id);
-    if (section) section.remove();
-    if (fxCurrentTab === id) fxSwitchTab('cronograma');
-    fxRenderNav();
-    fxRenderSchedule();
-    fxCloseModal();
-  }
 
   function fxRenderNav() {
     const isAdmin = fxIsAdmin();
@@ -3191,19 +2897,6 @@
     fxRenderSocials();
   };
 
-  ['sponsored', 'watched', 'games', 'content'].forEach(catalog => {
-    FX_DRAG_HANDLERS['cat-' + catalog] = ({
-      toContainer
-    }) => {
-      const newOrder = fxContainerIds(toContainer);
-      const idSet = new Set(newOrder);
-      const byId = new Map(state[catalog].map(it => [it.id, it]));
-      let ptr = 0;
-      state[catalog] = state[catalog].map(it => idSet.has(it.id) ? byId.get(newOrder[ptr++]) : it);
-      fxSave(catalog);
-      fxRenderGrid(catalog);
-    };
-  });
 
   /** Registra o único listener global que evita que um clique "vazado" logo
       depois de soltar um card arrastado dispare a ação de clique do card
@@ -3258,20 +2951,6 @@
             </div>`;
   }
 
-  /** Gera um "nome de arquivo" fake pro topo do card, no estilo janela antiga —
-      cada catálogo tem uma extensão temática. */
-  function fxFakeFilename(catalog, item) {
-    const slug = (item.title || 'item').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 16) ||
-      'item';
-    const ext = {
-      sponsored: '.zip',
-      watched: '.mp4',
-      games: '.exe',
-      content: '.mov',
-      quick: '.lnk'
-    } [catalog] || '.dat';
-    return slug + ext;
-  }
 
   function fxBadge(text, color) {
     return `<span class="fx-badge" style="background:${color}22;color:${color}">${esc(text)}</span>`;
@@ -3279,259 +2958,26 @@
 
   /* ---------- Grids ---------- */
 
-  /** Redesenha a grade de cards de um catálogo, aplicando busca por texto e os filtros de chip ativos. */
-  function fxRenderGrid(catalog) {
-    const grid = document.getElementById('grid-' + catalog);
-    if (!grid) return;
 
-    if (!state[catalog]) state[catalog] = [];
-    const searchEl = document.getElementById('search-' + catalog);
-    const query = (searchEl ? searchEl.value : '').toLowerCase();
-    let items = state[catalog].filter(i => i.title.toLowerCase().includes(query));
-
-    if (catalog === 'watched') {
-      if (fxFilters.watched.type) items = items.filter(i => i.type === fxFilters.watched.type);
-      if (fxFilters.watched.status) items = items.filter(i => i.status === fxFilters.watched.status);
-    }
-    if (catalog === 'games' && fxFilters.games.status) {
-      items = items.filter(i => i.status === fxFilters.games.status);
-    }
-    if (catalog === 'content' && fxFilters.content.platform) {
-      items = items.filter(i => (i.platforms || []).includes(fxFilters.content.platform));
-    }
-
-    if (!items.length) {
-      grid.innerHTML = '<div class="fx-empty">Nada por aqui ainda. Clique em Adicionar para começar.</div>';
-      if (catalog === 'content') fxRenderBoard();
-      return;
-    }
-
-    grid.innerHTML = items.map(i => {
-      if (catalog === 'sponsored') {
-        const isEpType = i.type === 'Série' || i.type === 'Anime';
-        const right = (isEpType && i.totalEpisodes) ?
-          `<span class="fx-badge" style="background:#0008;color:#fff">Ep ${i.sponsoredEpisodes||0}/${i.totalEpisodes}</span>` :
-          (i.year ? `<span class="fx-badge" style="background:#0008;color:#fff">${esc(i.year)}</span>` : '');
-        return fxPosterCard({
-          id: i.id,
-          img: fxPickImage(i.image, 'vertical'),
-          title: i.title,
-          sub: i.type,
-          filename: fxFakeFilename('sponsored', i),
-          topLeftHtml: fxBadge('Em breve', '#E0A83E'),
-          topRightHtml: right,
-          onclick: `fxOpenDetail('sponsored','${i.id}')`
-        });
-      }
-      if (catalog === 'watched') {
-        let right = '';
-        if (i.totalEpisodes) right =
-          `<span class="fx-badge" style="background:#0008;color:#fff">Ep ${i.episode||0}/${i.totalEpisodes}</span>`;
-        return fxPosterCard({
-          id: i.id,
-          img: fxPickImage(i.image, 'vertical'),
-          title: i.title,
-          sub: i.type,
-          filename: fxFakeFilename('watched', i),
-          topLeftHtml: fxBadge(i.status || 'Assistido', STATUS_COLORS[i.status] || '#8FBF6F'),
-          topRightHtml: right,
-          onclick: `fxOpenDetail('watched','${i.id}')`
-        });
-      }
-      if (catalog === 'games') {
-        return fxPosterCard({
-          id: i.id,
-          img: fxPickImage(i.image, 'vertical'),
-          title: i.title,
-          sub: i.year ? 'Lançado em ' + i.year : '',
-          filename: fxFakeFilename('games', i),
-          topLeftHtml: i.status ? fxBadge(i.status, STATUS_COLORS[i.status] || '#8C7060') : '',
-          onclick: `fxOpenDetail('games','${i.id}')`
-        });
-      }
-      if (catalog === 'content') {
-        const plats = (i.platforms || []);
-        const tagsHtml = plats.slice(0, 2).map(p =>
-          `<span class="fx-badge" style="background:${fxPlatformColor(p)}22;color:${fxPlatformColor(p)}">${esc(p)}</span>`
-        ).join('');
-        return fxPosterCard({
-          id: i.id,
-          img: fxPickImage(i.image, 'vertical'),
-          title: i.title,
-          sub: plats.join('  '),
-          filename: fxFakeFilename('content', i),
-          topLeftHtml: tagsHtml,
-          topRightHtml: fxBadge(i.status || 'Ideia', STATUS_COLORS[i.status] || '#8C7060'),
-          bodyRightHtml: i.notes ? `<span class="fx-board-note-icon" title="Tem anotação">${ICON.note}</span>` : '',
-          onclick: `fxOpenDetail('content','${i.id}')`
-        });
-      }
-      // Aba personalizada (criada pelo admin): card genérico guiado pelo
-      // template do catálogo — mostra como badge o primeiro campo de
-      // seleção preenchido, e como subtítulo o primeiro campo de texto.
-      const tpl = fxTemplateFor(catalog);
-      const badgeField = tpl.fields.find(f => f.type === 'select' && i[f.key]);
-      const subField = tpl.fields.find(f => (f.type === 'text' || f.type === 'date') && f.key !== 'title' && i[f.key]);
-      return fxPosterCard({
-        id: i.id,
-        img: fxPickImage(i.image, 'vertical'),
-        title: i.title,
-        sub: subField ? i[subField.key] : '',
-        filename: fxFakeFilename(catalog, i),
-        topLeftHtml: badgeField ? fxBadge(i[badgeField.key], STATUS_COLORS[i[badgeField.key]] || fxPlatformColor(i[badgeField.key])) : '',
-        onclick: `fxOpenDetail('${catalog}','${i.id}')`
-      });
-    }).join('');
-
-    if (catalog === 'content') fxRenderBoard();
-  }
-
-  /** Alias com nome mais claro para os pontos que disparam a atualização de Conteúdos
-      (que tem duas visualizações: grade e board). */
-  function fxRenderContent() {
-    fxRenderGrid('content');
-  }
 
   const CONTENT_STATUSES = ['Ideia', 'Em breve', 'Gravado', 'Edição', 'Finalizado'];
 
-  function fxSetContentView(view) {
-    fxLocalSet('content-view', view);
-    document.getElementById('content-view-grid').classList.toggle('active', view === 'grid');
-    document.getElementById('content-view-board').classList.toggle('active', view === 'board');
-    document.getElementById('grid-content').style.display = view === 'grid' ? '' : 'none';
-    document.getElementById('board-content').style.display = view === 'board' ? '' : 'none';
-    if (view === 'board') fxRenderBoard();
-  }
 
-  /** Desenha o board Kanban de Conteúdos: uma coluna por status, com botões para
-      mover o card pra frente/trás no fluxo (Ideia → ... → Finalizado). */
-  function fxRenderBoard() {
-    const board = document.getElementById('board-content');
-    if (!board) return;
 
-    const searchEl = document.getElementById('search-content');
-    const query = (searchEl ? searchEl.value : '').toLowerCase();
-    let items = state.content.filter(i => i.title.toLowerCase().includes(query));
-    if (fxFilters.content.platform) {
-      items = items.filter(i => (i.platforms || []).includes(fxFilters.content.platform));
-    }
-
-    board.innerHTML = CONTENT_STATUSES.map((status, colIndex) => {
-      const colItems = items.filter(i => (i.status || 'Ideia') === status);
-      const cardsHtml = colItems.length ? colItems.map(i => {
-        const plats = (i.platforms || []).slice(0, 3).map(p =>
-          `<span class="fx-badge" style="background:${fxPlatformColor(p)}22;color:${fxPlatformColor(p)}">${esc(p)}</span>`
-        ).join('');
-        const canMoveBack = colIndex > 0;
-        const canMoveFwd = colIndex < CONTENT_STATUSES.length - 1;
-        return `<div class="fx-board-card" onclick="fxOpenDetail('content','${i.id}')">
-                  <div class="fx-board-card-top">
-                    <div class="fx-board-card-title">${esc(i.title)}</div>
-                    ${i.notes ? `<span class="fx-board-note-icon" title="Tem anotação">${ICON.note}</span>` : ''}
-                  </div>
-                  ${plats ? `<div class="fx-board-card-plats">${plats}</div>` : ''}
-                  ${fxIsAdmin() ? `<div class="fx-board-card-move">
-                    <button class="fx-board-move-btn" title="Mover para trás" ${canMoveBack ? '' : 'disabled'} onclick="event.stopPropagation();fxMoveContentStatus('${i.id}',${colIndex-1})">${ICON.chevronLeft}</button>
-                    <button class="fx-board-move-btn" title="Mover para frente" ${canMoveFwd ? '' : 'disabled'} onclick="event.stopPropagation();fxMoveContentStatus('${i.id}',${colIndex+1})">${ICON.chevronRight}</button>
-                  </div>` : ''}
-                </div>`;
-      }).join('') : '<div class="fx-board-empty">Vazio</div>';
-
-      return `<div class="fx-board-col">
-                <div class="fx-board-col-head">
-                  <span class="fx-board-col-title">${esc(status)}</span>
-                  <span class="fx-board-col-count">${colItems.length}</span>
-                </div>
-                ${cardsHtml}
-              </div>`;
-    }).join('');
-  }
-
-  /** Move um conteúdo para outro status a partir dos botões de seta do board. */
-  function fxMoveContentStatus(id, newIndex) {
-    if (newIndex < 0 || newIndex >= CONTENT_STATUSES.length) return;
-    const item = fxCatalogById('content', id);
-    if (!item) return;
-    item.status = CONTENT_STATUSES[newIndex];
-    fxSave('content');
-    fxRenderContent();
-  }
 
   /* ---------- Filtros (chips) ----------
      Um único objeto guarda o filtro ativo de cada aba/campo.
      Ex: fxFilters.watched.type === 'Anime' filtra só animes em Assistidos. */
-  const fxFilters = {
-    watched: {
-      type: '',
-      status: ''
-    },
-    games: {
-      status: ''
-    },
-    content: {
-      platform: ''
-    },
-    schedule: {
-      filter: 'Próximas'
-    }
-  };
+  const fxFilters = { schedule: { filter: 'Próximas' } };
 
-  const WATCHED_TYPES = ['Filme', 'Série', 'Anime'];
-  const WATCHED_STATUSES = ['Assistido', 'Assistindo', 'Incompleto', 'Pausado', 'Quero assistir'];
 
-  /** Desenha uma linha de chips (ex: "Tipo: Todos | Filme | Série | Anime") dentro do elemento com o id informado.
-      onSelectFnName é o NOME (string) da função que trata o clique, ex: 'fxSetWatchedTypeFilter'. */
-  function fxRenderChipRow(containerId, options, activeValue, onSelectFnName, label) {
-    const el = document.getElementById(containerId);
-    if (!el) return;
-    const labelHtml = label ? `<span class="fx-chip-label">${esc(label)}</span>` : '';
-    const allChip = `<div class="fx-chip${!activeValue ? ' active' : ''}" onclick="${onSelectFnName}('')">Todos</div>`;
-    const optionChips = options.map(opt =>
-      `<div class="fx-chip${activeValue === opt ? ' active' : ''}" onclick="${onSelectFnName}('${esc(opt)}')">${esc(opt)}</div>`
-    ).join('');
-    el.innerHTML = labelHtml + allChip + optionChips;
-  }
 
-  function fxRenderWatchedFilters() {
-    fxRenderChipRow('watched-type-filter', WATCHED_TYPES, fxFilters.watched.type, 'fxSetWatchedTypeFilter', 'Tipo');
-    fxRenderChipRow('watched-status-filter', WATCHED_STATUSES, fxFilters.watched.status, 'fxSetWatchedStatusFilter',
-      'Status');
-    fxUpdateFilterCount('watched', (fxFilters.watched.type ? 1 : 0) + (fxFilters.watched.status ? 1 : 0));
-  }
 
-  function fxSetWatchedTypeFilter(value) {
-    fxFilters.watched.type = value;
-    fxRenderWatchedFilters();
-    fxRenderGrid('watched');
-  }
 
-  function fxSetWatchedStatusFilter(value) {
-    fxFilters.watched.status = value;
-    fxRenderWatchedFilters();
-    fxRenderGrid('watched');
-  }
 
-  function fxRenderGamesFilters() {
-    fxRenderChipRow('games-status-filter', GAME_TAGS, fxFilters.games.status, 'fxSetGamesStatusFilter', '');
-    fxUpdateFilterCount('games', fxFilters.games.status ? 1 : 0);
-  }
 
-  function fxSetGamesStatusFilter(value) {
-    fxFilters.games.status = value;
-    fxRenderGamesFilters();
-    fxRenderGrid('games');
-  }
 
-  function fxRenderPlatformFilter() {
-    fxRenderChipRow('content-platform-filter', state.platforms, fxFilters.content.platform, 'fxSetPlatformFilter', '');
-    fxUpdateFilterCount('content', fxFilters.content.platform ? 1 : 0);
-  }
 
-  function fxSetPlatformFilter(value) {
-    fxFilters.content.platform = value;
-    fxRenderPlatformFilter();
-    fxRenderContent();
-  }
 
   /* ---------- Minhas Redes ----------
      Lista de redes sociais/links que aparece na aba "Minhas Redes" (e no atalho
@@ -3665,11 +3111,7 @@
   function fxOpenTabManager() {
     const rows = fxAllTabDefs().map(t => {
       const forcedAdmin = t.adminOnly ? ' <span style="color:var(--text-3);font-weight:400">(sempre só admin)</span>' : '';
-      const customBtns = t.custom ? `
-                  <button class="fx-tab-mgr-btn" title="Renomear aba" onclick="fxOpenRenameTabForm('${t.id}')">${ICON.edit}</button>
-                  <button class="fx-tpl-remove-btn" title="Excluir aba" onclick="fxConfirmDeleteCustomTab('${t.id}')">${ICON.trash}</button>` :
-        (FX_FIXED_DELETABLE[t.id] ? `
-                  <button class="fx-tpl-remove-btn" title="Excluir aba" onclick="fxConfirmDeleteFixedTab('${t.id}')">${ICON.trash}</button>` : '');
+      const customBtns = '';
       return `<label class="fx-toggle-row">
                 <span>${esc(t.label)}${forcedAdmin}</span>
                 <span class="fx-tab-mgr-controls">
@@ -3695,34 +3137,7 @@
     fxRenderNav();
   }
 
-  function fxOpenRenameTabForm(id) {
-    const tab = (state.customTabs || []).find(t => t.id === id);
-    if (!tab) return;
-    fxOpenModal(`<div class="fx-modal-body">
-              <h3 class="fx-modal-title">Renomear aba</h3>
-              <div class="fx-form-full"><label class="fx-field-label">Nome da aba *</label><input class="fx-input" autocomplete="off" id="f-rename-tab-label" value="${esc(tab.label)}"></div>
-              <div class="fx-modal-actions">
-                <button class="fx-btn" onclick="fxRenameCustomTab('${id}')">Salvar</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxOpenTabManager()">Cancelar</button>
-              </div>
-            </div>`, 'renomear_aba.tmp');
-  }
 
-  function fxRenameCustomTab(id) {
-    const input = document.getElementById('f-rename-tab-label');
-    const label = ((input && input.value) || '').trim();
-    if (!label) return;
-    const tab = (state.customTabs || []).find(t => t.id === id);
-    if (!tab) return;
-    tab.label = label;
-    fxSave('customTabs');
-    if (state.templates && state.templates[id]) {
-      state.templates[id].label = label;
-      fxSave('templates');
-    }
-    fxRenderNav();
-    fxOpenTabManager();
-  }
 
   /* ---------- Painel de filtros recolhível ----------
      Lembra se o painel estava aberto/fechado (por seção) mesmo depois de recarregar
@@ -3737,7 +3152,7 @@
   }
 
   function fxInitFilterPanels() {
-    ['watched', 'games', 'content'].forEach(section => {
+    ['games'].forEach(section => {
       const isOpen = fxLocalGet('filters-open-' + section) === true;
       const panel = document.getElementById('filter-panel-' + section);
       const toggle = document.getElementById('filter-toggle-' + section);
@@ -3831,7 +3246,480 @@
     };
   }
 
-  /* ---------- Hero / countdown ---------- */
+  /* ---------- JOGOS: biblioteca central (usada também no Cronograma) ----------
+     Cada jogo: { id, title, status (Tag pessoal), image{vertical,horizontal,square}, genres[], themes[],
+     platforms[], modes[], releaseDate{value,precision}|null, synopsis, synopsisSource, igdbId, sgdbId }.
+     Campos antigos dos jogos já cadastrados são preservados ao editar. A Tag nunca vem das APIs. */
+  const GAME_TAGS_ALL = ['Zerado', 'Jogando', 'Abandonado', 'Jogado', 'Planejado'];
+  const fxGamesFilter = { q: '', status: '', genre: '', theme: '', platform: '', mode: '', from: '', to: '' };
+  let fxGameDraft = null; // estado do formulário aberto (campos editados à mão, ids das APIs)
+
+  const fxList = v => (Array.isArray(v) ? v : []);
+  const fxSplit = str => [...new Set(String(str || '').split(',').map(x => x.trim()).filter(Boolean))];
+  const fxNorm = str => String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const fxGameYear = g => (g.releaseDate && g.releaseDate.value ? parseInt(String(g.releaseDate.value).slice(0, 4), 10) : null);
+  const fxDistinct = key => [...new Set((state.games || []).flatMap(g => fxList(g[key])))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+  function fxGameMatches(g) {
+    const f = fxGamesFilter;
+    if (f.q && !fxNorm(g.title).includes(fxNorm(f.q))) return false;
+    if (f.status && g.status !== f.status) return false;
+    if (f.genre && !fxList(g.genres).includes(f.genre)) return false;
+    if (f.theme && !fxList(g.themes).includes(f.theme)) return false;
+    if (f.platform && !fxList(g.platforms).includes(f.platform)) return false;
+    if (f.mode && !fxList(g.modes).includes(f.mode)) return false;
+    if (f.from || f.to) {
+      const y = fxGameYear(g);
+      if (y == null) return false; // sem data conhecida não entra em filtro por período
+      if (f.from && y < +f.from) return false;
+      if (f.to && y > +f.to) return false;
+    }
+    return true;
+  }
+
+  function fxSelectHtml(id, label, options, value, extra) {
+    return `<select class="fx-select" aria-label="${esc(label)}" onchange="fxSetGamesFilter('${id}',this.value)"><option value="">${esc(label)}</option>${options.map(o => `<option value="${esc(o)}"${o === value ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  }
+
+  function fxRenderGamesFilters() {
+    const el = document.getElementById('games-filters');
+    if (!el) return;
+    const f = fxGamesFilter;
+    el.innerHTML = `<div class="fx-filter-row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        ${fxSelectHtml('status', 'Status', GAME_TAGS_ALL, f.status)}
+        ${fxSelectHtml('genre', 'Gênero', fxDistinct('genres'), f.genre)}
+        ${fxSelectHtml('theme', 'Tema', fxDistinct('themes'), f.theme)}
+        ${fxSelectHtml('platform', 'Plataforma', fxDistinct('platforms'), f.platform)}
+        ${fxSelectHtml('mode', 'Modo de jogo', fxDistinct('modes'), f.mode)}
+        <input class="fx-input" type="number" min="1970" max="2100" style="width:96px" placeholder="De (ano)" aria-label="Lançado a partir do ano" value="${esc(f.from)}" onchange="fxSetGamesFilter('from',this.value)">
+        <input class="fx-input" type="number" min="1970" max="2100" style="width:96px" placeholder="Até (ano)" aria-label="Lançado até o ano" value="${esc(f.to)}" onchange="fxSetGamesFilter('to',this.value)">
+        <button class="fx-btn fx-btn-ghost fx-btn-sm" onclick="fxClearGamesFilters()">Limpar filtros</button>
+      </div>`;
+    const n = ['status', 'genre', 'theme', 'platform', 'mode', 'from', 'to'].filter(k => f[k]).length;
+    fxUpdateFilterCount('games', n);
+  }
+
+  function fxSetGamesFilter(key, value) { fxGamesFilter[key] = value; fxRenderGames(); }
+  function fxClearGamesFilters() {
+    Object.keys(fxGamesFilter).forEach(k => fxGamesFilter[k] = '');
+    const s = document.getElementById('search-games');
+    if (s) s.value = '';
+    fxRenderGames();
+  }
+  function fxOnGamesSearch(v) { fxGamesFilter.q = v; fxRenderGames(false); }
+
+  function fxGameBadges(g) {
+    return g.status ? fxBadge(g.status, STATUS_COLORS[g.status] || '#7FA8C9') : '';
+  }
+
+  function fxRenderGames(refreshFilters) {
+    const grid = document.getElementById('grid-games');
+    if (!grid) return;
+    if (refreshFilters !== false) fxRenderGamesFilters();
+    const all = state.games || [];
+    const items = all.filter(fxGameMatches).sort((a, b) => String(a.title).localeCompare(String(b.title), 'pt-BR'));
+    if (!items.length) {
+      grid.innerHTML = `<div class="fx-sched-empty" style="grid-column:1/-1"><div class="fx-sched-empty-title">${all.length ? 'Nenhum jogo com esses filtros' : 'Nenhum jogo cadastrado ainda'}</div>
+        <p>${all.length ? 'Tente limpar os filtros ou mudar a busca.' : (fxIsAdmin() ? 'Clique em "+ Novo jogo" para cadastrar o primeiro.' : 'Volte em breve.')}</p></div>`;
+      return;
+    }
+    grid.innerHTML = items.map(g => fxPosterCard({
+      img: fxPickImage(g.image, 'vertical'), title: g.title, topLeftHtml: fxGameBadges(g),
+      sub: esc([fxGameYear(g), fxList(g.genres).slice(0, 2).join(', ')].filter(Boolean).join(' · ')),
+      onclick: `fxOpenGameDetail('${g.id}')`
+    })).join('');
+  }
+
+  function fxFormatRelease(r) {
+    if (!r || !r.value) return '';
+    const [y, m, d] = String(r.value).split('-');
+    if (r.precision === 'day' && d) return `${d}/${m}/${y}`;
+    if (r.precision === 'month' && m) return `${m}/${y}`;
+    return y;
+  }
+
+  function fxOpenGameDetail(id) {
+    const g = fxCatalogById('games', id);
+    if (!g) return;
+    const line = (label, arr) => (arr && arr.length ? `<p class="fx-modal-sinopse" style="margin:4px 0"><b>${label}:</b> ${esc(arr.join(', '))}</p>` : '');
+    const rel = fxFormatRelease(g.releaseDate);
+    const admin = fxIsAdmin() ? `<button class="fx-btn" onclick="fxOpenGameForm('${g.id}')">${ICON.edit} Editar</button>
+        <button class="fx-btn-danger fx-btn" onclick="fxConfirmDeleteGame('${g.id}')">${ICON.trash} Excluir</button>` : '';
+    fxOpenModal(`<div class="fx-modal-body">
+        <div class="fx-modal-hero">${fxImgTag(fxPickImage(g.image, 'horizontal'), '', 'fx-modal-hero-noimg')}</div>
+        <h3 class="fx-modal-title">${esc(g.title)}</h3>
+        <div style="margin-bottom:8px">${fxGameBadges(g)}</div>
+        ${rel ? `<p class="fx-modal-sinopse" style="margin:4px 0"><b>Lançamento:</b> ${esc(rel)}</p>` : ''}
+        ${line('Gêneros', g.genres)}${line('Temas', g.themes)}${line('Plataformas', g.platforms)}${line('Modos', g.modes)}
+        ${g.synopsis ? `<div class="fx-modal-sinopse-label">Sinopse</div><div class="fx-modal-sinopse">${esc(g.synopsis)}</div>${g.synopsisSource === 'igdb-en' ? '<p style="font-size:11px;color:var(--text-3)">Texto original da IGDB, em inglês (não traduzido).</p>' : ''}` : ''}
+        <div class="fx-modal-actions">${admin}<button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Fechar</button></div>
+      </div>`, 'jogo.dat');
+  }
+
+  /** Detalhe de um item da agenda: jogos abrem a ficha; entradas antigas (outros catálogos) só mostram o título. */
+  function fxOpenDetail(catalog, id) {
+    if (catalog === 'games') return fxOpenGameDetail(id);
+    const d = fxCatalogById(catalog, id);
+    if (d) fxOpenModal(`<div class="fx-modal-body"><h3 class="fx-modal-title">${esc(d.title)}</h3><div class="fx-modal-actions"><button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Fechar</button></div></div>`);
+  }
+
+  /* ----- Formulário NOVO JOGO / EDITAR JOGO ----- */
+  function fxOpenGameForm(id) {
+    const g = id ? fxCatalogById('games', id) : null;
+    fxGameDraft = { id: id || null, dirty: {}, igdbId: g ? g.igdbId || null : null, sgdbId: g ? g.sgdbId || null : null,
+      synopsisSource: g ? g.synopsisSource || 'manual' : 'manual', releaseText: g ? fxReleaseToText(g.releaseDate) : '', seq: 0 };
+    const tagOpts = GAME_TAGS_ALL.map(t => `<option value="${t}"${g && g.status === t ? ' selected' : ''}>${t}</option>`).join('');
+    const listField = (key, label, val) => `<div><label class="fx-field-label" for="f-g-${key}">${label}</label>
+        <input class="fx-input" autocomplete="off" id="f-g-${key}" list="dl-g-${key}" value="${esc(fxList(val).join(', '))}" placeholder="separe por vírgula" oninput="fxGameDirty('${key}')">
+        <datalist id="dl-g-${key}">${fxDistinct(key === 'modes' ? 'modes' : key).map(o => `<option value="${esc(o)}">`).join('')}</datalist></div>`;
+    fxOpenModal(`<div class="fx-modal-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <h3 class="fx-modal-title" style="margin:0">${g ? 'EDITAR JOGO' : 'NOVO JOGO'}</h3>
+          <button class="fx-btn fx-btn-ghost" id="g-lupa" title="Pesquisar jogo na IGDB" aria-label="Pesquisar jogo na IGDB" onclick="fxToggleGameSearch()">🔍</button>
+        </div>
+        <div id="g-search" style="display:none;margin:10px 0">
+          <input class="fx-input" id="g-search-q" autocomplete="off" placeholder="Pesquisar na IGDB…" oninput="fxGameSearchDebounced(this.value)" aria-label="Pesquisar jogo na IGDB">
+          <div id="g-search-res" role="listbox" style="margin-top:8px"></div>
+        </div>
+        <div id="g-msg" role="status" style="font-size:12px;color:var(--text-3);min-height:16px;margin:6px 0"></div>
+        <div class="fx-form-grid">
+          <div class="fx-form-full"><label class="fx-field-label" for="f-g-title">Título *</label>
+            <input class="fx-input" autocomplete="off" id="f-g-title" list="dl-g-title" value="${esc(g ? g.title : '')}" oninput="fxGameDirty('title');fxGameTitleSuggest(this.value)">
+            <datalist id="dl-g-title"></datalist></div>
+          <div><label class="fx-field-label" for="f-g-status">Tag (status pessoal)</label>
+            <select class="fx-select" id="f-g-status" style="width:100%"><option value="">— sem tag —</option>${tagOpts}</select></div>
+          <div><label class="fx-field-label" for="f-g-release">Lançamento (AAAA, AAAA-MM ou AAAA-MM-DD)</label>
+            <input class="fx-input" autocomplete="off" id="f-g-release" value="${esc(fxGameDraft.releaseText)}" placeholder="ex.: 2017-02-24" oninput="fxGameDirty('release')"></div>
+          ${listField('genres', 'Gêneros', g && g.genres)}${listField('themes', 'Temas', g && g.themes)}
+          ${listField('platforms', 'Plataformas', g && g.platforms)}${listField('modes', 'Modos de jogo', g && g.modes)}
+          <div class="fx-form-full"><label class="fx-field-label" for="f-g-synopsis">Sinopse</label>
+            <textarea class="fx-input" id="f-g-synopsis" rows="4" oninput="fxGameDirty('synopsis');fxGameDraft.synopsisSource='manual'">${esc(g ? g.synopsis || '' : '')}</textarea>
+            <p id="g-syn-note" style="font-size:11px;color:var(--text-3);margin:4px 0 0"></p></div>
+          <div class="fx-form-full"><label class="fx-field-label">Imagens</label>
+            ${fxImageVariantsHtml('f-g-img', g && g.image)}
+            <button class="fx-btn fx-btn-ghost fx-btn-sm" style="margin-top:8px" onclick="fxOpenArtPicker()">🎨 Escolher artes no SteamGridDB</button>
+            <div id="g-art" style="margin-top:8px"></div></div>
+        </div>
+        <div class="fx-modal-actions">
+          <button class="fx-btn" onclick="fxSaveGame()">Salvar</button>
+          <button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Cancelar</button>
+        </div>
+      </div>`, 'novo_jogo.exe');
+    fxGameSynNote();
+  }
+
+  const fxReleaseToText = r => (r && r.value ? r.value : '');
+  function fxGameDirty(k) { if (fxGameDraft) fxGameDraft.dirty[k] = true; }
+  function fxGameMsg(text, isError) {
+    const el = document.getElementById('g-msg');
+    if (el) { el.textContent = text || ''; el.style.color = isError ? 'var(--danger, #D65B4A)' : 'var(--text-3)'; }
+  }
+  function fxGameSynNote() {
+    const el = document.getElementById('g-syn-note');
+    if (el && fxGameDraft) el.textContent = fxGameDraft.synopsisSource === 'igdb-en' ? 'Texto original da IGDB, em inglês — não foi traduzido. Edite à vontade.' : '';
+  }
+
+  function fxGameTitleSuggest(v) {
+    const dl = document.getElementById('dl-g-title');
+    if (!dl) return;
+    const p = fxNorm(v);
+    dl.innerHTML = !p ? '' : (state.games || []).filter(g => fxNorm(g.title).startsWith(p) && g.id !== (fxGameDraft && fxGameDraft.id))
+      .slice(0, 8).map(g => `<option value="${esc(g.title)}">`).join('');
+  }
+
+  function fxToggleGameSearch() {
+    const box = document.getElementById('g-search');
+    box.style.display = box.style.display === 'none' ? '' : 'none';
+    if (box.style.display === '') document.getElementById('g-search-q').focus();
+  }
+
+  const fxGameSearchDebounced = fxDebounce(async (q) => {
+    const res = document.getElementById('g-search-res');
+    if (!res || !fxGameDraft) return;
+    q = String(q || '').trim();
+    if (q.length < 2) { res.innerHTML = ''; return; }
+    const seq = ++fxGameDraft.seq;
+    res.innerHTML = '<p style="font-size:12px">Buscando…</p>';
+    const r = await fxGameApi('igdb_search', { query: q });
+    if (!fxGameDraft || seq !== fxGameDraft.seq || !document.getElementById('g-search-res')) return; // resposta velha
+    if (!r.ok) { res.innerHTML = `<p style="font-size:12px;color:#D65B4A">${esc(r.message)}</p>`; return; }
+    if (!r.results.length) { res.innerHTML = '<p style="font-size:12px">Nada encontrado. Você pode preencher tudo à mão.</p>'; return; }
+    res.innerHTML = r.results.map(x => `<button class="fx-btn fx-btn-ghost" style="display:flex;gap:10px;align-items:center;width:100%;text-align:left;margin-bottom:4px" onclick="fxApplyIgdbGame(${x.id})">
+        ${x.coverThumb ? `<img src="${esc(x.coverThumb)}" alt="" width="34" height="46" style="object-fit:cover;border-radius:3px">` : '<span style="width:34px"></span>'}
+        <span>${esc(x.name)}<br><small style="opacity:.7">${esc([x.releaseYear, fxList(x.platforms).slice(0, 3).join(', ')].filter(Boolean).join(' · '))}</small></span></button>`).join('');
+  }, 400);
+
+  /** Preenche os campos com os dados da IGDB. Campo que o usuário já mexeu NÃO é sobrescrito
+      (a menos que force=true, via botão explícito). A Tag nunca é tocada. */
+  async function fxApplyIgdbGame(igdbId, force) {
+    fxGameMsg('Carregando dados do jogo…');
+    const r = await fxGameApi('igdb_game', { id: igdbId });
+    if (!r.ok) { fxGameMsg(r.message, true); return; }
+    const g = r.game, d = fxGameDraft, skipped = [];
+    const put = (key, elId, value) => {
+      const el = document.getElementById(elId);
+      if (!el || value == null || value === '' || (Array.isArray(value) && !value.length)) return;
+      const text = Array.isArray(value) ? value.join(', ') : value;
+      if (d.dirty[key] && el.value.trim() && el.value.trim() !== text && !force) { skipped.push(key); return; }
+      el.value = text;
+      if (force) d.dirty[key] = false;
+    };
+    put('title', 'f-g-title', g.name);
+    put('genres', 'f-g-genres', g.genres); put('themes', 'f-g-themes', g.themes);
+    put('platforms', 'f-g-platforms', g.platforms); put('modes', 'f-g-modes', g.gameModes);
+    put('release', 'f-g-release', g.releaseDate && g.releaseDate.value);
+    if (g.summary) {
+      const el = document.getElementById('f-g-synopsis');
+      if (!d.dirty.synopsis || !el.value.trim() || force) { el.value = g.summary; d.synopsisSource = 'igdb-en'; d.dirty.synopsis = false; fxGameSynNote(); } else skipped.push('synopsis');
+    }
+    d.igdbId = g.igdbId;
+    d.igdbCover = g.cover ? g.cover.url : null;
+    d.lastApplied = igdbId;
+    const note = skipped.length ? ` Mantive o que você editou (${skipped.length} campo(s)). <a href="#" onclick="fxApplyIgdbGame(${igdbId},true);return false">Sobrescrever com os dados da IGDB</a>` : '';
+    document.getElementById('g-msg').innerHTML = `Dados da IGDB aplicados. Revise antes de salvar.${note}`;
+    document.getElementById('g-search').style.display = 'none';
+  }
+
+  /* ----- SteamGridDB: escolher artes ----- */
+  async function fxOpenArtPicker() {
+    const box = document.getElementById('g-art');
+    const title = document.getElementById('f-g-title').value.trim();
+    if (title.length < 2) { box.innerHTML = '<p style="font-size:12px">Digite o título do jogo primeiro.</p>'; return; }
+    box.innerHTML = '<p style="font-size:12px">Buscando jogo no SteamGridDB…</p>';
+    const r = await fxGameApi('sgdb_search', { query: title });
+    if (!r.ok) { box.innerHTML = `<p style="font-size:12px;color:#D65B4A">${esc(r.message)}</p>`; return; }
+    if (!r.results.length) { box.innerHTML = '<p style="font-size:12px">Nenhum jogo encontrado no SteamGridDB. Use uma URL ou envie um arquivo.</p>'; return; }
+    box.innerHTML = '<p style="font-size:12px">Qual é o jogo?</p>' + r.results.slice(0, 6).map(x =>
+      `<button class="fx-btn fx-btn-ghost fx-btn-sm" style="margin:0 6px 6px 0" onclick="fxLoadArt(${x.id})">${esc(x.name)}${x.releaseYear ? ' (' + x.releaseYear + ')' : ''}</button>`).join('');
+  }
+
+  async function fxLoadArt(sgdbId) {
+    const box = document.getElementById('g-art');
+    box.innerHTML = '<p style="font-size:12px">Carregando artes…</p>';
+    const r = await fxGameApi('sgdb_images', { gameId: sgdbId });
+    if (!r.ok) { box.innerHTML = `<p style="font-size:12px;color:#D65B4A">${esc(r.message)}</p>`; return; }
+    fxGameDraft.sgdbId = sgdbId;
+    const names = { vertical: 'Vertical (~2:3)', horizontal: 'Horizontal (~2,1:1)', square: 'Quadrada (1:1)' };
+    box.innerHTML = Object.keys(names).map(k => {
+      const f = r.formats[k];
+      const body = f && f.available ? f.items.slice(0, 12).map(i => `<button type="button" class="fx-btn-ghost" style="padding:2px;margin:0 6px 6px 0;border:1px solid var(--border,#444);background:none;cursor:pointer" aria-label="Usar esta arte ${k}" onclick="fxUseArt('${k}','${esc(i.url)}')"><img src="${esc(i.thumb)}" alt="" style="height:${k === 'vertical' ? 110 : 64}px;display:block"></button>`).join('')
+        : '<span style="font-size:12px;opacity:.7">Sem arte disponível neste formato.</span>';
+      return `<div style="margin-bottom:8px"><div class="fx-image-variant-label">${names[k]}</div>${body}</div>`;
+    }).join('') + '<p style="font-size:11px;color:var(--text-3)">As proporções do SteamGridDB não são exatamente 9:16 / 16:9; o site recorta para caber.</p>';
+  }
+
+  function fxUseArt(format, url) {
+    document.getElementById('f-g-img-' + format).value = url;
+    fxGameMsg(`Arte ${format} escolhida. Salve para guardar.`);
+  }
+
+  /* ----- Salvar / excluir ----- */
+  const fxSafeImg = u => !u || /^https:\/\//i.test(u) || /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(u);
+
+  function fxParseRelease(text) {
+    const t = String(text || '').trim();
+    if (!t) return { ok: true, value: null };
+    const m = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(t);
+    if (!m) return { ok: false };
+    const mo = m[2] ? +m[2] : 1, da = m[3] ? +m[3] : 1;
+    if (mo < 1 || mo > 12 || da < 1 || da > 31) return { ok: false };
+    return { ok: true, value: { value: t, precision: m[3] ? 'day' : m[2] ? 'month' : 'year' } }; // não inventa dia/mês
+  }
+
+  function fxSaveGame() {
+    const d = fxGameDraft;
+    const val = id => (document.getElementById(id) || {}).value || '';
+    const title = val('f-g-title').trim();
+    if (!title) { fxGameMsg('Informe o título do jogo.', true); return; }
+    const rel = fxParseRelease(val('f-g-release'));
+    if (!rel.ok) { fxGameMsg('Data de lançamento inválida. Use AAAA, AAAA-MM ou AAAA-MM-DD.', true); return; }
+    const image = fxImageVariantsValue('f-g-img');
+    const bad = Object.keys(image).find(k => !fxSafeImg(image[k]));
+    if (bad) { fxGameMsg(`A imagem ${bad} precisa ser uma URL https:// ou um arquivo enviado.`, true); return; }
+    const dup = (state.games || []).find(g => g.id !== d.id && (fxNorm(g.title) === fxNorm(title) || (d.igdbId && g.igdbId === d.igdbId)));
+    if (dup && !d.dupOk) { d.dupOk = true; fxGameMsg(`Já existe "${dup.title}" na biblioteca. Clique em Salvar de novo se quiser cadastrar mesmo assim.`, true); return; }
+    const fields = { title, status: val('f-g-status'), image, genres: fxSplit(val('f-g-genres')), themes: fxSplit(val('f-g-themes')),
+      platforms: fxSplit(val('f-g-platforms')), modes: fxSplit(val('f-g-modes')), releaseDate: rel.value, synopsis: val('f-g-synopsis').trim(),
+      synopsisSource: d.synopsisSource, igdbId: d.igdbId || null, sgdbId: d.sgdbId || null };
+    const list = (state.games || []).slice(); // sempre parte do estado mais recente, mexendo só neste jogo
+    const idx = d.id ? list.findIndex(g => g.id === d.id) : -1;
+    if (idx >= 0) list[idx] = Object.assign({}, list[idx], fields);
+    else list.push(Object.assign({ id: uid() }, fields));
+    state.games = list;
+    fxSave('games');
+    fxRenderGames();
+    fxCloseModal();
+  }
+
+  function fxConfirmDeleteGame(id) {
+    const g = fxCatalogById('games', id);
+    if (!g) return;
+    const uses = (state.schedule || []).filter(s => s.catalog === 'games' && s.refId === id).length;
+    if (uses) {
+      fxOpenModal(`<div class="fx-modal-body"><h3 class="fx-modal-title">Não dá para excluir ainda</h3>
+        <p class="fx-modal-sinopse">"${esc(g.title)}" está em ${uses} transmissão(ões) do Cronograma. Remova-o delas primeiro para não deixar referências quebradas.</p>
+        <div class="fx-modal-actions"><button class="fx-btn" onclick="fxOpenGameDetail('${id}')">Voltar</button></div></div>`);
+      return;
+    }
+    fxConfirmAction('Excluir este jogo?', `"${g.title}" será removido da biblioteca. Essa ação não pode ser desfeita.`, 'Sim, excluir', `fxDeleteGame('${id}')`);
+  }
+  function fxDeleteGame(id) {
+    state.games = (state.games || []).filter(g => g.id !== id);
+    fxSave('games');
+    fxRenderGames();
+    fxCloseModal();
+  }
+
+  /* ----- Cronograma: nova transmissão a partir de um jogo da biblioteca ----- */
+  function fxOpenScheduleAdd() {
+    const games = (state.games || []).slice().sort((a, b) => String(a.title).localeCompare(String(b.title), 'pt-BR'));
+    if (!games.length) {
+      fxOpenModal(`<div class="fx-modal-body"><h3 class="fx-modal-title">Nova transmissão</h3><p class="fx-modal-sinopse">Cadastre ao menos um jogo na aba JOGOS antes de agendar.</p>
+        <div class="fx-modal-actions"><button class="fx-btn" onclick="fxCloseModal();fxSwitchTab('jogos')">Ir para JOGOS</button></div></div>`);
+      return;
+    }
+    fxOpenModal(`<div class="fx-modal-body"><h3 class="fx-modal-title">Nova transmissão</h3>
+      <div id="sched-msg" role="status" style="font-size:12px;color:#D65B4A;min-height:16px"></div>
+      <div class="fx-form-grid">
+        <div class="fx-form-full"><label class="fx-field-label" for="f-sched-game">Jogo *</label>
+          <select class="fx-select" id="f-sched-game" style="width:100%">${games.map(g => `<option value="${g.id}">${esc(g.title)}</option>`).join('')}</select></div>
+        <div><label class="fx-field-label" for="f-sched-datetime">Início * (horário de Brasília)</label><input class="fx-input" type="datetime-local" id="f-sched-datetime"></div>
+        <div><label class="fx-field-label" for="f-sched-end">Término (opcional)</label><input class="fx-input" type="datetime-local" id="f-sched-end"></div>
+      </div>
+      <div class="fx-modal-actions"><button class="fx-btn" onclick="fxSubmitScheduleAdd()">Agendar</button><button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Cancelar</button></div></div>`, 'nova_transmissao.tmp');
+  }
+
+  function fxSubmitScheduleAdd() {
+    const val = id => (document.getElementById(id) || {}).value || '';
+    const start = fxInputToIso(val('f-sched-datetime')), endRaw = val('f-sched-end'), end = fxInputToIso(endRaw);
+    const msg = t => { document.getElementById('sched-msg').textContent = t; };
+    if (!start) return msg('Informe a data e o horário de início.');
+    if (endRaw && (!end || new Date(end) <= new Date(start))) return msg('O término precisa ser depois do início.');
+    state.schedule = (state.schedule || []).concat([{ id: uid(), catalog: 'games', refId: val('f-sched-game'), datetime: start, endDatetime: end || null }]);
+    fxSave('schedule');
+    fxRenderSchedule();
+    fxRenderHero();
+    fxCloseModal();
+  }
+
+
+/* ---------- Próxima live (vem 100% das transmissões cadastradas) ----------
+     Nada é digitado de novo aqui: título, imagem e horário saem da transmissão e do jogo
+     escolhidos. state.heroSel = { scheduleId } guarda a escolha (null = automática: a mais próxima). */
+  const FX_LIVE_POLL_MS = 60000;            // no máximo 1 consulta por minuto por navegador
+  const FX_LIVE_EARLY_MS = 30 * 60000;      // começa a checar 30 min antes do horário
+  let fxLiveStatus = { state: 'unknown', checkedAt: 0, inFlight: false }; // 'live' | 'offline' | 'unknown'
+
+  /** Transmissões que ainda não terminaram (futuras ou em andamento), da mais próxima para a mais distante. */
+  function fxHeroCandidates() {
+    return (state.schedule || [])
+      .filter(s => fxCatalogById(s.catalog, s.refId) && ['upcoming', 'live'].includes(fxSchedStatus(s)))
+      .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+  }
+
+  function fxHeroResolve() {
+    const list = fxHeroCandidates();
+    const sel = state.heroSel && state.heroSel.scheduleId;
+    return list.find(s => s.id === sel) || list[0] || null;
+  }
+
+  /** Consulta a função do Supabase (que fala com a API oficial da Twitch). Nunca lança e nunca
+      conclui "offline" por falha de rede: sem resposta confiável o estado fica 'unknown'. */
+  async function fxFetchLiveStatus() {
+    if (!_supabase) return 'unknown';
+    try {
+      const { data, error } = await _supabase.functions.invoke(FX_GAME_FN, { body: { action: 'live_status' } });
+      const st = !error && data && data.ok && data.platforms && data.platforms.twitch && data.platforms.twitch.state;
+      return st === 'live' || st === 'offline' ? st : 'unknown';
+    } catch (e) {
+      return 'unknown';
+    }
+  }
+
+  function fxPollLive() {
+    if (fxLiveStatus.inFlight || document.hidden) return;
+    if (Date.now() - fxLiveStatus.checkedAt < FX_LIVE_POLL_MS) return;
+    fxLiveStatus.inFlight = true;
+    fxFetchLiveStatus().then(st => {
+      fxLiveStatus = { state: st, checkedAt: Date.now(), inFlight: false };
+      fxRenderHero();
+    });
+  }
+
+  function fxRenderHero() {
+    const el = document.getElementById('fx-hero');
+    if (!el) return;
+    const winbar = `<div class="fx-winbar"><span class="fx-winbar-name">proxima_live.cal</span>
+      <span class="fx-winbar-dots"><span class="fx-winbar-dot"></span><span class="fx-winbar-dot"></span><span class="fx-winbar-dot"></span></span></div>`;
+    const entry = fxHeroResolve();
+    const adminBtn = fxIsAdmin() ? '<button class="fx-btn" onclick="event.stopPropagation();fxOpenHeroPicker()">Escolher transmissão</button>' : '';
+    if (!entry) {
+      el.onclick = null;
+      el.classList.remove('fx-hero-clickable');
+      el.innerHTML = `${winbar}<div class="fx-hero-content"><div style="flex:1"><p class="fx-hero-empty">Nenhuma próxima live agendada no momento.</p></div>${adminBtn}</div>`;
+      return;
+    }
+    const game = fxCatalogById(entry.catalog, entry.refId);
+    const target = new Date(entry.datetime), now = new Date();
+    const pastTarget = target <= now;
+    const nearStart = !pastTarget && target - now <= FX_LIVE_EARLY_MS;
+    if (pastTarget || nearStart) fxPollLive();
+    const confirmedLive = fxLiveStatus.state === 'live' && (pastTarget || nearStart);
+
+    if (fxIsAdmin()) { el.onclick = fxOpenHeroPicker; el.classList.add('fx-hero-clickable'); }
+    else if (pastTarget || confirmedLive) { el.onclick = () => window.open(FX_TWITCH_URL, '_blank', 'noopener'); el.classList.add('fx-hero-clickable'); }
+    else { el.onclick = null; el.classList.remove('fx-hero-clickable'); }
+
+    let rightHtml, eyebrow;
+    if (confirmedLive) {
+      eyebrow = 'Ao vivo agora';
+      rightHtml = `<div class="fx-hero-live"><div class="fx-hero-live-badge"><span class="fx-hero-live-dot"></span>AO VIVO</div>
+        <a class="fx-hero-live-link" href="${FX_TWITCH_URL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir na Twitch</a></div>`;
+    } else if (pastTarget) {
+      // Passou do horário e a plataforma não confirmou: não afirma que está offline.
+      eyebrow = 'Já deveria ter começado';
+      const note = fxLiveStatus.state === 'offline' ? 'Ainda não abri a live na Twitch.' : 'Sem confirmação da plataforma no momento.';
+      rightHtml = `<div class="fx-hero-waiting"><div class="fx-hero-waiting-badge">A qualquer momento...</div><p style="font-size:11px;margin:6px 0 0;opacity:.8">${note}</p></div>`;
+    } else {
+      eyebrow = nearStart ? 'Aguardando início' : 'Próxima live';
+      const diff = target - now, p = n => String(n).padStart(2, '0');
+      const box = (n, l) => `<div class="fx-countdown-box"><div class="fx-countdown-num">${p(n)}</div><div class="fx-countdown-label">${l}</div></div>`;
+      rightHtml = `<div class="fx-hero-countdown">${nearStart ? '<div class="fx-hero-waiting-badge" style="margin-bottom:6px">AGUARDANDO</div>' : ''}
+        ${box(Math.floor(diff / 86400000), 'Dias')}${box(Math.floor((diff % 86400000) / 3600000), 'Horas')}${box(Math.floor((diff % 3600000) / 60000), 'Min')}${box(Math.floor((diff % 60000) / 1000), 'Seg')}</div>`;
+    }
+    const dayName = target.toLocaleDateString('pt-BR', { timeZone: FX_TZ, weekday: 'long' });
+    const timeStr = target.toLocaleTimeString('pt-BR', { timeZone: FX_TZ, hour: '2-digit', minute: '2-digit' });
+    const img = fxPickImage(game.image, 'horizontal');
+    el.innerHTML = `${winbar}<div class="fx-hero-content">
+      ${fxImgTag(img, 'fx-hero-img pick-horizontal', 'fx-hero-img fx-hero-noimg pick-horizontal')}
+      <div class="fx-hero-mid">
+        <div class="fx-hero-eyebrow"><span class="fx-hero-dot${confirmedLive ? ' fx-hero-dot-live' : ''}"></span>${eyebrow}</div>
+        <div class="fx-hero-title">${esc(game.title)}</div>
+        <div class="fx-hero-time">${ICON.clock} ${dayName.charAt(0).toUpperCase() + dayName.slice(1)} às ${timeStr}</div>
+      </div>${rightHtml}</div>`;
+  }
+
+  function fxOpenHeroPicker() {
+    const list = fxHeroCandidates(), sel = state.heroSel && state.heroSel.scheduleId;
+    const row = (id, label, checked) => `<label class="fx-toggle-row"><span>${label}</span><input type="radio" name="hero-sel" value="${id}" ${checked ? 'checked' : ''}></label>`;
+    fxOpenModal(`<div class="fx-modal-body"><h3 class="fx-modal-title">Qual live aparece em "Próxima live"?</h3>
+      ${list.length ? row('', 'Automática (a mais próxima)', !sel || !list.some(s => s.id === sel)) + list.map(s => {
+        const g = fxCatalogById(s.catalog, s.refId);
+        return row(s.id, `${esc(g.title)} — ${esc(fxFormatSchedDate(s.datetime))}`, s.id === sel);
+      }).join('') : '<p class="fx-modal-sinopse">Não há transmissões futuras. Cadastre uma em "Próximas transmissões".</p>'}
+      <div class="fx-modal-actions">${list.length ? '<button class="fx-btn" onclick="fxSaveHeroPick()">Salvar</button>' : ''}<button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Fechar</button></div></div>`, 'proxima_live.cfg');
+  }
+
+  function fxSaveHeroPick() {
+    const r = document.querySelector('input[name="hero-sel"]:checked');
+    state.heroSel = { scheduleId: r && r.value ? r.value : null };
+    fxSave('heroSel');
+    fxRenderHero();
+    fxCloseModal();
+  }
+
+
+/* ---------- Hero / countdown ---------- */
   const FX_TWITCH_URL = 'https://www.twitch.tv/FractalVox';
   const FX_YOUTUBE_LIVE_URL = 'https://www.youtube.com/@fractalvox/live';
 
@@ -3840,253 +3728,15 @@
       autenticação que não dá pra guardar com segurança num site estático como
       este. O parâmetro offline_msg força o texto exato que ele devolve quando
       o canal está offline, pra não depender de adivinhar o texto padrão dele. */
-  const FX_TWITCH_LIVE_CHECK_URL = 'https://decapi.me/twitch/uptime/fractalvox?offline_msg=OFFLINE';
-  const FX_LIVE_CHECK_INTERVAL_MS = 20000;
 
-  let fxHeroLiveConfirmed = false;
-  let fxHeroLiveCheckedFor = null;
-  let fxHeroLiveCheckInFlight = false;
-  let fxHeroLiveLastCheckAt = 0;
 
-  /** Retorna true (ao vivo), false (offline) ou null quando não deu pra saber
-      (rede fora, serviço de terceiros fora do ar...) — nesse caso o hero
-      simplesmente continua em "Aguarde" e tenta de novo depois. */
-  async function fxCheckTwitchLive() {
-    try {
-      const res = await fetch(FX_TWITCH_LIVE_CHECK_URL, {
-        cache: 'no-store'
-      });
-      if (!res.ok) return null;
-      const text = (await res.text()).trim();
-      return text.toUpperCase() !== 'OFFLINE';
-    } catch (e) {
-      return null;
-    }
-  }
 
-  /** Chamado a cada render do hero enquanto ele está em "Aguarde" — mas só
-      dispara uma checagem de verdade no máximo a cada 20s, pra não martelar
-      o serviço de terceiros. Roda em segundo plano; quando confirma ao vivo,
-      re-renderiza o hero pra trocar de tela sozinho. Se quem estiver com o
-      site aberto for você (admin), a confirmação também é salva pra todo
-      mundo — assim ninguém mais precisa esperar a própria checagem confirmar
-      de novo. Em qualquer outro navegador (visitante comum) a confirmação
-      fica só local: não tenta gravar no banco, porque essa gravação seria
-      barrada mesmo (só admin pode salvar) e apareceria um alerta de erro
-      confuso pra quem só estava assistindo. */
-  function fxPollTwitchLive() {
-    if (fxHeroLiveCheckInFlight) return;
-    const now = Date.now();
-    if (now - fxHeroLiveLastCheckAt < FX_LIVE_CHECK_INTERVAL_MS) return;
-    fxHeroLiveLastCheckAt = now;
-    fxHeroLiveCheckInFlight = true;
-    fxCheckTwitchLive().then(live => {
-      fxHeroLiveCheckInFlight = false;
-      if (live === true) {
-        fxHeroLiveConfirmed = true;
-        if (fxIsAdmin() && state.hero && !state.hero.forceLive) {
-          state.hero.forceLive = true;
-          fxSave('hero');
-        }
-        fxRenderHero();
-      }
-    });
-  }
 
-  /** Botão de emergência do admin: se a checagem automática falhar por
-      qualquer motivo, ainda dá pra virar "AO VIVO" na mão — e isso já
-      sincroniza pra todo mundo, porque fica salvo junto com o hero. */
-  function fxForceHeroLive() {
-    if (!state.hero) return;
-    state.hero.forceLive = true;
-    fxSave('hero');
-    fxHeroLiveConfirmed = true;
-    fxRenderHero();
-  }
 
-  function fxRenderHero() {
-    const el = document.getElementById('fx-hero');
-    const winbar = `<div class="fx-winbar">
-              <span class="fx-winbar-name">proxima_live.cal</span>
-              <span class="fx-winbar-dots"><span class="fx-winbar-dot"></span><span class="fx-winbar-dot"></span><span class="fx-winbar-dot"></span></span>
-            </div>`;
-    if (!state.hero || !state.hero.datetime) {
-      el.onclick = null;
-      el.classList.remove('fx-hero-clickable');
-      const addBtn = fxIsAdmin() ?
-        '<button class="fx-btn" onclick="event.stopPropagation();fxOpenHeroForm()">+ Configurar próxima live</button>' :
-        '';
-      el.innerHTML =
-        `${winbar}<div class="fx-hero-content"><div style="flex:1"><p class="fx-hero-empty">Nenhuma próxima live agendada no momento.</p></div>${addBtn}</div>`;
-      return;
-    }
-    const h = state.hero;
-    const target = new Date(h.datetime);
-    const now = new Date();
 
-    // Trocou a live agendada (ou é a primeira vez que roda): zera a
-    // confirmação da checagem automática, que só vale pra ESSA live.
-    if (fxHeroLiveCheckedFor !== h.datetime) {
-      fxHeroLiveCheckedFor = h.datetime;
-      fxHeroLiveConfirmed = false;
-    }
 
-    const pastTarget = target <= now;
-    // "Ao vivo" de verdade só quando confirmado — via checagem automática na
-    // Twitch ou o admin marcando na mão. Só passar do horário não basta:
-    // nesse meio-tempo fica em "Aguarde" (ver mais abaixo).
-    const isLive = pastTarget && (h.forceLive || fxHeroLiveConfirmed);
-    const isWaiting = pastTarget && !isLive;
 
-    if (isWaiting) fxPollTwitchLive();
 
-    if (fxIsAdmin()) {
-      // Admin sempre pode clicar no hero pra editar/encerrar, em qualquer estado.
-      el.onclick = fxOpenHeroForm;
-      el.classList.add('fx-hero-clickable');
-    } else if (pastTarget) {
-      // Visitante depois do horário marcado (aguardando ou já confirmado ao
-      // vivo): o hero inteiro vira atalho pra Twitch.
-      el.onclick = () => window.open(FX_TWITCH_URL, '_blank', 'noopener');
-      el.classList.add('fx-hero-clickable');
-    } else {
-      el.onclick = null;
-      el.classList.remove('fx-hero-clickable');
-    }
-
-    let rightHtml;
-    if (isLive) {
-      rightHtml = `<div class="fx-hero-live">
-                <div class="fx-hero-live-badge"><span class="fx-hero-live-dot"></span>AO VIVO</div>
-                <a class="fx-hero-live-link" href="${FX_TWITCH_URL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ICON.ext} Assistir na Twitch</a>
-              </div>`;
-    } else if (isWaiting) {
-      const forceBtn = fxIsAdmin() ?
-        `<button class="fx-btn fx-btn-sm" onclick="event.stopPropagation();fxForceHeroLive()">Já estou ao vivo</button>` :
-        '';
-      rightHtml = `<div class="fx-hero-waiting">
-                <div class="fx-hero-waiting-badge">AGUARDE</div>
-                ${forceBtn}
-              </div>`;
-    } else {
-      const diff = target - now;
-      const days = Math.floor(diff / 86400000);
-      const hours = Math.floor((diff % 86400000) / 3600000);
-      const mins = Math.floor((diff % 3600000) / 60000);
-      const secs = Math.floor((diff % 60000) / 1000);
-      rightHtml = `<div class="fx-hero-countdown">
-                <div class="fx-countdown-box"><div class="fx-countdown-num">${String(days).padStart(2,'0')}</div><div class="fx-countdown-label">Dias</div></div>
-                <div class="fx-countdown-box"><div class="fx-countdown-num">${String(hours).padStart(2,'0')}</div><div class="fx-countdown-label">Horas</div></div>
-                <div class="fx-countdown-box"><div class="fx-countdown-num">${String(mins).padStart(2,'0')}</div><div class="fx-countdown-label">Min</div></div>
-                <div class="fx-countdown-box"><div class="fx-countdown-num">${String(secs).padStart(2,'0')}</div><div class="fx-countdown-label">Seg</div></div>
-              </div>`;
-    }
-
-    const dayName = target.toLocaleDateString('pt-BR', {
-      timeZone: FX_TZ,
-      weekday: 'long'
-    });
-    const timeStr = target.toLocaleTimeString('pt-BR', {
-      timeZone: FX_TZ,
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-
-    const pick = h.imagePick || 'horizontal';
-    const heroImgSrc = fxPickImage(h.images || h.image, pick);
-    const eyebrowText = isLive ? 'Ao vivo agora' : (isWaiting ? 'Aguardando início' : 'Próxima live');
-
-    el.innerHTML = `${winbar}<div class="fx-hero-content">
-              ${fxImgTag(heroImgSrc, 'fx-hero-img pick-'+pick, 'fx-hero-img fx-hero-noimg pick-'+pick)}
-              <div class="fx-hero-mid">
-                <div class="fx-hero-eyebrow"><span class="fx-hero-dot${isLive?' fx-hero-dot-live':''}"></span>${eyebrowText}</div>
-                <div class="fx-hero-title">${esc(h.title)}</div>
-                <div class="fx-hero-time">${ICON.clock} ${dayName.charAt(0).toUpperCase()+dayName.slice(1)} às ${timeStr}</div>
-              </div>
-              ${rightHtml}</div>`;
-  }
-
-  function fxOpenHeroForm() {
-    const h = state.hero || {};
-    const dtVal = fxIsoToInput(h.datetime);
-    const imgs = (h.images && typeof h.images === 'object') ? h.images : {
-      vertical: h.image || '',
-      horizontal: '',
-      square: ''
-    };
-    const pick = h.imagePick || 'horizontal';
-    fxOpenModal(`<div class="fx-modal-body">
-              <h3 class="fx-modal-title">Próxima live</h3>
-              <div class="fx-form-grid">
-                <div class="fx-form-full"><label class="fx-field-label">Título da live</label><input class="fx-input" autocomplete="off" id="f-hero-title" value="${esc(h.title||'')}"></div>
-                <div class="fx-form-full"><label class="fx-field-label">Imagem</label>
-                  ${fxImageVariantsHtml('f-hero-image', imgs)}
-                </div>
-                <div class="fx-form-full"><label class="fx-field-label">Qual imagem mostrar aqui no hero</label>
-                  <select class="fx-select" id="f-hero-image-pick" style="width:100%">
-                    <option value="horizontal"${pick==='horizontal'?' selected':''}>Horizontal (16:9)</option>
-                    <option value="vertical"${pick==='vertical'?' selected':''}>Vertical (pôster)</option>
-                    <option value="square"${pick==='square'?' selected':''}>Quadrada (1:1)</option>
-                  </select>
-                </div>
-                <div class="fx-form-full"><label class="fx-field-label">Data e hora</label><input class="fx-input" autocomplete="off" type="datetime-local" id="f-hero-datetime" value="${dtVal}"></div>
-              </div>
-              <div class="fx-modal-actions">
-                <button class="fx-btn" onclick="fxSaveHero()">Salvar</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Cancelar</button>
-                ${h.datetime ? `<button class="fx-btn-danger fx-btn" onclick="fxConfirmDeleteHero()">${ICON.trash} Excluir</button>` : ''}
-              </div>
-            </div>`);
-  }
-
-  function fxConfirmDeleteHero() {
-    fxOpenModal(`<div class="fx-modal-body">
-              <h3 class="fx-modal-title">Excluir próxima live?</h3>
-              <p class="fx-modal-sinopse">Essa ação não pode ser desfeita.</p>
-              <div class="fx-modal-actions">
-                <button class="fx-btn-danger fx-btn" onclick="fxDeleteHero()">${ICON.trash} Sim, excluir</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxOpenHeroForm()">Cancelar</button>
-              </div>
-            </div>`);
-  }
-
-  function fxSaveHero() {
-    const title = document.getElementById('f-hero-title').value.trim();
-    const dt = document.getElementById('f-hero-datetime').value;
-    if (!title || !dt) return;
-    const images = fxImageVariantsValue('f-hero-image');
-    const imagePick = (document.getElementById('f-hero-image-pick') || {}).value || 'horizontal';
-    const newDatetime = fxInputToIso(dt);
-    const prev = state.hero || {};
-    // Se for a MESMA live (só corrigindo título/imagem), preserva o "ao vivo"
-    // já confirmado — senão editar o hero no meio da transmissão voltaria ela
-    // pro "Aguarde" do nada. Só reseta de verdade quando a data muda (ou seja,
-    // é uma transmissão diferente).
-    const sameStream = prev.datetime === newDatetime;
-    state.hero = {
-      title,
-      images,
-      imagePick,
-      datetime: newDatetime,
-      forceLive: sameStream ? !!prev.forceLive : false
-    };
-    if (!sameStream) {
-      fxHeroLiveConfirmed = false;
-      fxHeroLiveCheckedFor = null;
-    }
-    fxSave('hero');
-    fxRenderHero();
-    fxCloseModal();
-  }
-
-  function fxDeleteHero() {
-    state.hero = {};
-    fxHeroLiveConfirmed = false;
-    fxHeroLiveCheckedFor = null;
-    fxSave('hero');
-    fxRenderHero();
-    fxCloseModal();
-  }
 
   /* ---------- Cronograma: transmissões agendadas ---------- */
   function fxCatalogById(catalog, id) {
@@ -4172,6 +3822,7 @@
       e YouTube); depois que já rolou, levam pro VOD específico daquela
       transmissão (cadastrado em "Editar horário/links") quando existir. */
   function fxRenderSchedule() {
+    fxRenderHero(); // a Próxima live sai da mesma lista: qualquer mudança na agenda atualiza o painel
     const el = document.getElementById('fx-sched-list');
     if (!el) return;
     const isAdmin = fxIsAdmin();
@@ -4197,11 +3848,8 @@
     el.innerHTML = items.map(s => {
       const item = fxCatalogById(s.catalog, s.refId);
       const past = fxIsSchedPast(s);
-      const tpl = fxTemplateFor(s.catalog);
-      const tagColor = s.catalog === 'sponsored' ? '#E0A83E' : s.catalog === 'quick' ? '#E8967D' : (STATUS_COLORS[
-        item.status] || '#7FA8C9');
-      const tagText = s.catalog === 'sponsored' ? 'Patrocinado' : s.catalog === 'quick' ? 'Card padrão' : (s.catalog ===
-        'games' ? 'Jogo' : (item.type || (s.catalog === 'watched' ? 'Assistido' : (tpl.label || 'Conteúdo'))));
+      const tagColor = STATUS_COLORS[item.status] || '#7FA8C9';
+      const tagText = s.catalog === 'games' ? 'Jogo' : 'Transmissão';
 
       let actionsHtml = '';
       if (past) {
@@ -4287,6 +3935,7 @@
               <p class="fx-modal-sinopse" style="margin-bottom:14px">${esc((item&&item.title)||'Item removido')}</p>
               <div class="fx-form-grid">
                 <div class="fx-form-full"><label class="fx-field-label">Data e hora *</label><input class="fx-input" autocomplete="off" type="datetime-local" id="f-schedentry-datetime" value="${dtVal}"></div>
+                <div class="fx-form-full"><label class="fx-field-label">Término (opcional — define quando a live deixa de estar em andamento)</label><input class="fx-input" autocomplete="off" type="datetime-local" id="f-schedentry-end" value="${fxIsoToInput(s.endDatetime)}"></div>
                 <div class="fx-form-full"><label class="fx-field-label">Link do VOD na Twitch (opcional — só depois que já rolou)</label><input class="fx-input" autocomplete="off" id="f-schedentry-twitch" value="${esc(s.twitchUrl||'')}" placeholder="https://twitch.tv/..."></div>
                 <div class="fx-form-full"><label class="fx-field-label">Link do VOD no YouTube (opcional — só depois que já rolou)</label><input class="fx-input" autocomplete="off" id="f-schedentry-youtube" value="${esc(s.youtubeUrl||'')}" placeholder="https://youtube.com/..."></div>
               </div>
@@ -4305,194 +3954,28 @@
     if (!s) return;
     const dt = (document.getElementById('f-schedentry-datetime') || {}).value || '';
     if (!dt) return;
-    s.datetime = fxInputToIso(dt);
+    const endRaw = (document.getElementById('f-schedentry-end') || {}).value || '';
+    const startIso = fxInputToIso(dt), endIso = fxInputToIso(endRaw);
+    if (endRaw && (!endIso || new Date(endIso) <= new Date(startIso))) { alert('O término precisa ser depois do início.'); return; }
+    s.datetime = startIso;
+    s.endDatetime = endIso || null;
     s.twitchUrl = ((document.getElementById('f-schedentry-twitch') || {}).value || '').trim();
     s.youtubeUrl = ((document.getElementById('f-schedentry-youtube') || {}).value || '').trim();
     fxSave('schedule');
     fxRenderSchedule();
+    fxRenderHero();
     fxCloseModal();
   }
 
-  function fxSchedCommonFields() {
-    return {
-      dt: (document.getElementById('f-sched-datetime') || {}).value || ''
-    };
-  }
 
-  function fxOpenScheduleAdd() {
-    fxOpenModal(`<div class="fx-modal-body">
-              <h3 class="fx-modal-title">Nova transmissão</h3>
-              <div class="fx-form-grid">
-                <div class="fx-form-full"><label class="fx-field-label">Data e hora *</label><input class="fx-input" autocomplete="off" type="datetime-local" id="f-sched-datetime"></div>
-              </div>
-              <p style="font-size:11px;color:var(--text-3);margin:-4px 0 4px">Os links do VOD são adicionados depois, quando a live já tiver acontecido (em "Editar horário/links").</p>
-              <div class="fx-mode-switch" style="margin-top:10px">
-                <button class="fx-mode-btn active" id="sched-mode-existing" onclick="fxSchedMode('existing')">Selecionar existente</button>
-                <button class="fx-mode-btn" id="sched-mode-quick" onclick="fxSchedMode('quick')">Cards padrão</button>
-                <button class="fx-mode-btn" id="sched-mode-new" onclick="fxSchedMode('new')">Criar novo</button>
-              </div>
-              <div id="sched-body"></div>
-            </div>`, 'nova_transmissao.tmp');
-    fxSchedMode('existing');
-  }
 
-  function fxSchedMode(mode) {
-    ['existing', 'quick', 'new'].forEach(m => {
-      const btn = document.getElementById('sched-mode-' + m);
-      if (btn) btn.classList.toggle('active', m === mode);
-    });
-    const body = document.getElementById('sched-body');
-    if (mode === 'existing') {
-      const opts = ['sponsored', 'watched', 'games', ...fxCustomTabIds()].map(cat => {
-        const label = cat === 'sponsored' ? 'Patrocinados' : cat === 'watched' ? 'Assistidos' : cat === 'games' ?
-          'Jogados' : fxTemplateFor(cat).label;
-        const items = state[cat] || [];
-        if (!items.length) return '';
-        return `<optgroup label="${label}">${items.map(i => `<option value="${cat}|${i.id}">${esc(i.title)}</option>`).join('')}</optgroup>`;
-      }).join('');
-      body.innerHTML = `
-                <label class="fx-field-label">Item existente</label>
-                <select class="fx-select" id="sched-existing-select" style="width:100%">${opts || '<option>Nenhum item cadastrado ainda</option>'}</select>
-                <div class="fx-modal-actions">
-                  <button class="fx-btn" onclick="fxAddScheduleExisting()">Adicionar</button>
-                  <button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Cancelar</button>
-                </div>`;
-    } else if (mode === 'quick') {
-      fxRenderQuickPicker();
-    } else {
-      body.innerHTML = `
-                <label class="fx-field-label">Adicionar em qual catálogo?</label>
-                <select class="fx-select" id="sched-new-catalog" style="width:100%;margin-bottom:12px" onchange="fxSchedNewFields()">
-                  <option value="sponsored">Patrocinados</option>
-                  <option value="watched">Assistidos</option>
-                  <option value="games">Jogados</option>
-                  ${fxCustomTabIds().map(id => `<option value="${id}">${esc(fxTemplateFor(id).label)}</option>`).join('')}
-                </select>
-                <div id="sched-new-fields"></div>`;
-      fxSchedNewFields();
-    }
-  }
 
-  /** Aba "Cards padrão": grid com os cards avulsos reutilizáveis (Offline, Jogo
-      aleatório, e o que mais o admin cadastrar) — clicar num tile já adiciona
-      na agenda. O último tile ("+") abre um formulário mínimo (nome, imagem,
-      sinopse), sem sair do modal, pra cadastrar um card padrão novo. */
-  function fxRenderQuickPicker() {
-    const body = document.getElementById('sched-body');
-    if (!body) return;
-    const tiles = (state.quick || []).map(q => `
-              <button class="fx-quick-tile" onclick="fxAddScheduleQuick('${q.id}')">
-                ${fxImgTag(fxPickImage(q.image, 'square'), 'fx-quick-tile-img', 'fx-quick-tile-noimg')}
-                <span class="fx-quick-tile-name">${esc(q.title)}</span>
-              </button>`).join('');
-    body.innerHTML = `<div class="fx-quick-grid">
-                ${tiles}
-                <button class="fx-quick-tile fx-quick-tile-add" onclick="fxOpenQuickCardForm()">
-                  <span class="fx-quick-tile-plus">+</span>
-                  <span class="fx-quick-tile-name">Criar card padrão</span>
-                </button>
-              </div>
-              <div class="fx-modal-actions">
-                <button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Cancelar</button>
-              </div>`;
-  }
 
-  function fxOpenQuickCardForm() {
-    const body = document.getElementById('sched-body');
-    if (!body) return;
-    body.innerHTML = `<h4 style="font-size:14px;margin:0 0 10px">Novo card padrão</h4>
-              ${fxFormFieldsHtml('quick', {})}
-              <div class="fx-modal-actions">
-                <button class="fx-btn" onclick="fxSubmitQuickCard()">Criar e adicionar</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxRenderQuickPicker()">Voltar</button>
-              </div>`;
-  }
 
-  function fxSubmitQuickCard() {
-    const {
-      dt
-    } = fxSchedCommonFields();
-    if (!dt) return;
-    const item = fxCollectFormData('quick');
-    if (!item.title) return;
-    if (!state.quick) state.quick = [];
-    state.quick.unshift(item);
-    fxSave('quick');
-    fxAddScheduleQuick(item.id);
-  }
 
-  function fxAddScheduleQuick(id) {
-    const {
-      dt
-    } = fxSchedCommonFields();
-    if (!dt) return;
-    state.schedule.push({
-      id: uid(),
-      catalog: 'quick',
-      refId: id,
-      datetime: fxInputToIso(dt),
-      twitchUrl: '',
-      youtubeUrl: ''
-    });
-    fxSave('schedule');
-    fxRenderSchedule();
-    fxCloseModal();
-  }
 
-  function fxSchedNewFields() {
-    const cat = document.getElementById('sched-new-catalog').value;
-    const el = document.getElementById('sched-new-fields');
-    el.innerHTML = fxFormFieldsHtml(cat, {}) + `
-              <div class="fx-modal-actions">
-                <button class="fx-btn" onclick="fxAddScheduleNew()">Criar e adicionar</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Cancelar</button>
-              </div>`;
-  }
 
-  function fxAddScheduleExisting() {
-    const {
-      dt
-    } = fxSchedCommonFields();
-    if (!dt) return;
-    const val = document.getElementById('sched-existing-select').value;
-    if (!val || !val.includes('|')) return;
-    const [cat, id] = val.split('|');
-    state.schedule.push({
-      id: uid(),
-      catalog: cat,
-      refId: id,
-      datetime: fxInputToIso(dt),
-      twitchUrl: '',
-      youtubeUrl: ''
-    });
-    fxSave('schedule');
-    fxRenderSchedule();
-    fxCloseModal();
-  }
 
-  function fxAddScheduleNew() {
-    const {
-      dt
-    } = fxSchedCommonFields();
-    if (!dt) return;
-    const cat = document.getElementById('sched-new-catalog').value;
-    const item = fxCollectFormData(cat);
-    if (!item.title) return;
-    state[cat].unshift(item);
-    fxSave(cat);
-    fxRenderGrid(cat);
-    state.schedule.push({
-      id: uid(),
-      catalog: cat,
-      refId: item.id,
-      datetime: fxInputToIso(dt),
-      twitchUrl: '',
-      youtubeUrl: ''
-    });
-    fxSave('schedule');
-    fxRenderSchedule();
-    fxCloseModal();
-  }
 
   /* ---------- Modal generic ---------- */
   function fxOpenModal(html, filename) {
@@ -4527,681 +4010,40 @@
      o resto do site depende dessas três chaves existirem; o resto é livre.
      Os campos dos catálogos originais mantêm as chaves de sempre (type,
      status, season, episode...) pra não quebrar nada que já foi cadastrado. */
-  const FX_FIELD_TYPES = {
-    text: 'Texto',
-    select: 'Seleção (com opções)',
-    multiselect: 'Seleção múltipla',
-    image: 'Imagem (URL ou arquivo)',
-    date: 'Data',
-    link: 'Link',
-    textarea: 'Texto longo',
-    progress: 'Progresso (atual / total)'
-  };
 
-  function fxDefaultTemplates() {
-    return {
-      sponsored: {
-        label: 'Patrocinado',
-        fields: [{
-            key: 'title',
-            type: 'text',
-            label: 'Título',
-            required: true,
-            core: true
-          },
-          {
-            key: 'image',
-            type: 'image',
-            label: 'Imagem',
-            core: true
-          },
-          {
-            key: 'type',
-            type: 'select',
-            label: 'Tipo',
-            options: ['Filme', 'Série', 'Anime', 'Jogo'],
-            plain: true
-          },
-          {
-            key: 'year',
-            type: 'text',
-            label: 'Ano'
-          },
-          {
-            key: 'sponsoredEpisodes',
-            type: 'progress',
-            label: 'Episódios patrocinados',
-            totalKey: 'totalEpisodes'
-          },
-          {
-            key: 'sponsor',
-            type: 'text',
-            label: 'Patrocinado por'
-          },
-          {
-            key: 'sinopse',
-            type: 'textarea',
-            label: 'Sinopse',
-            core: true
-          }
-        ]
-      },
-      watched: {
-        label: 'Assistido',
-        fields: [{
-            key: 'title',
-            type: 'text',
-            label: 'Título',
-            required: true,
-            core: true
-          },
-          {
-            key: 'image',
-            type: 'image',
-            label: 'Imagem',
-            core: true
-          },
-          {
-            key: 'type',
-            type: 'select',
-            label: 'Tipo',
-            options: WATCHED_TYPES.slice(),
-            plain: true
-          },
-          {
-            key: 'year',
-            type: 'text',
-            label: 'Ano'
-          },
-          {
-            key: 'status',
-            type: 'select',
-            label: 'Status',
-            options: WATCHED_STATUSES.slice()
-          },
-          {
-            key: 'season',
-            type: 'progress',
-            label: 'Temporada',
-            totalKey: 'totalSeasons'
-          },
-          {
-            key: 'episode',
-            type: 'progress',
-            label: 'Episódio',
-            totalKey: 'totalEpisodes'
-          },
-          {
-            key: 'sinopse',
-            type: 'textarea',
-            label: 'Sinopse',
-            core: true
-          }
-        ]
-      },
-      games: {
-        label: 'Jogo',
-        fields: [{
-            key: 'title',
-            type: 'text',
-            label: 'Título',
-            required: true,
-            core: true
-          },
-          {
-            key: 'image',
-            type: 'image',
-            label: 'Imagem',
-            core: true
-          },
-          {
-            key: 'year',
-            type: 'text',
-            label: 'Ano'
-          },
-          {
-            key: 'status',
-            type: 'select',
-            label: 'Tag',
-            options: GAME_TAGS.slice()
-          },
-          {
-            key: 'link',
-            type: 'link',
-            label: 'Link da playlist / vídeos'
-          },
-          {
-            key: 'sinopse',
-            type: 'textarea',
-            label: 'Sinopse',
-            core: true
-          }
-        ]
-      },
-      content: {
-        label: 'Conteúdo',
-        fields: [{
-            key: 'title',
-            type: 'text',
-            label: 'Título',
-            required: true,
-            core: true
-          },
-          {
-            key: 'image',
-            type: 'image',
-            label: 'Imagem',
-            core: true
-          },
-          {
-            key: 'platforms',
-            type: 'multiselect',
-            label: 'Plataformas',
-            optionsFrom: 'platforms'
-          },
-          {
-            key: 'status',
-            type: 'select',
-            label: 'Status',
-            options: CONTENT_STATUSES.slice()
-          },
-          {
-            key: 'notes',
-            type: 'textarea',
-            label: 'Anotações (roteiro, ideias, lembretes...)'
-          }
-        ]
-      },
-      quick: {
-        label: 'Card padrão',
-        fields: [{
-            key: 'title',
-            type: 'text',
-            label: 'Nome',
-            required: true,
-            core: true
-          },
-          {
-            key: 'image',
-            type: 'image',
-            label: 'Imagem',
-            core: true
-          },
-          {
-            key: 'sinopse',
-            type: 'textarea',
-            label: 'Sinopse',
-            core: true
-          }
-        ]
-      }
-    };
-  }
 
-  function fxCloneDefaultTemplates() {
-    return JSON.parse(JSON.stringify(fxDefaultTemplates()));
-  }
 
-  /** Sempre use essa função pra ler o template de um catálogo — se faltar
-      (dado antigo, ou um catálogo novo que ainda não existia) ela mesma
-      preenche com o padrão, sem precisar migrar nada manualmente. */
-  function fxTemplateFor(catalog) {
-    if (!state.templates) state.templates = fxCloneDefaultTemplates();
-    if (!state.templates[catalog]) {
-      const known = fxCloneDefaultTemplates()[catalog];
-      if (known) {
-        state.templates[catalog] = known;
-      } else {
-        // Aba personalizada: sem template padrão fixo, então cai num
-        // template genérico (mesmo formato do "quick") pra o formulário
-        // e o card de detalhe funcionarem de primeira. Editável depois em
-        // Templates de card, como qualquer outro catálogo.
-        const customTab = (state.customTabs || []).find(t => t.id === catalog);
-        state.templates[catalog] = {
-          label: customTab ? customTab.label : catalog,
-          fields: [{
-            key: 'title',
-            type: 'text',
-            label: 'Título',
-            required: true,
-            core: true
-          }, {
-            key: 'image',
-            type: 'image',
-            label: 'Imagem',
-            core: true
-          }, {
-            key: 'sinopse',
-            type: 'textarea',
-            label: 'Descrição',
-            core: true
-          }]
-        };
-      }
-    }
-    return state.templates[catalog];
-  }
 
-  function fxFieldInputId(key) {
-    return 'f-' + key;
-  }
 
-  /** HTML do campo de formulário pra um field de template, já com o valor
-      atual preenchido (edição) ou vazio (criação). */
-  function fxTplFieldHtml(field, d) {
-    const id = fxFieldInputId(field.key);
-    const val = d[field.key];
-    const label = `<label class="fx-field-label">${esc(field.label)}${field.required ? ' *' : ''}</label>`;
 
-    if (field.type === 'image') {
-      const imgs = (val && typeof val === 'object') ? val : {
-        vertical: val || '',
-        horizontal: '',
-        square: ''
-      };
-      return `<div class="fx-form-full">${label}
-              ${fxImageVariantsHtml(id, imgs)}
-              <span style="font-size:11px;color:var(--text-3)">Preencha ao menos uma — as abas de cards usam a vertical, e o Cronograma usa a quadrada (cai pra horizontal se não tiver).</span></div>`;
-    }
-    if (field.type === 'multiselect') {
-      const opts = field.optionsFrom ? (state[field.optionsFrom] || []) : (field.options || []);
-      const selected = Array.isArray(val) ? val : [];
-      const extra = field.optionsFrom === 'platforms' ?
-        `<div class="fx-add-platform-row"><input class="fx-input" autocomplete="off" id="f-new-platform" placeholder="Nova plataforma" style="flex:1"><button class="fx-btn fx-btn-sm fx-btn-ghost" type="button" onclick="fxAddPlatformToForm()">+</button></div>` :
-        '';
-      return `<div class="fx-form-full">${label}<div class="fx-platform-list" id="${id}">${opts.map(o=>`<label class="fx-platform-check"><input type="checkbox" value="${esc(o)}"${selected.includes(o)?' checked':''}>${esc(o)}</label>`).join('')}</div>${extra}</div>`;
-    }
-
-    let control;
-    if (field.type === 'link') {
-      control =
-        `<input class="fx-input" autocomplete="off" type="url" id="${id}" value="${esc(val||'')}" placeholder="https://...">`;
-    } else if (field.type === 'date') {
-      control = `<input class="fx-input" autocomplete="off" type="date" id="${id}" value="${esc(val||'')}">`;
-    } else if (field.type === 'textarea') {
-      control = `<textarea class="fx-input" autocomplete="off" rows="3" id="${id}">${esc(val||'')}</textarea>`;
-    } else if (field.type === 'select') {
-      const opts = field.optionsFrom ? (state[field.optionsFrom] || []) : (field.options || []);
-      const blank = field.required ? '' : `<option value=""${!val?' selected':''}>—</option>`;
-      control =
-        `<select class="fx-select" id="${id}" style="width:100%">${blank}${opts.map(o=>`<option${val===o?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
-    } else if (field.type === 'progress') {
-      const totalKey = field.totalKey || (field.key + 'Total');
-      const totalId = fxFieldInputId(totalKey);
-      control =
-        `<div style="display:flex;gap:8px;align-items:center"><input class="fx-input" autocomplete="off" type="number" min="0" id="${id}" value="${esc(val||'')}" placeholder="Atual" style="width:100%"><span style="color:var(--text-3)">/</span><input class="fx-input" autocomplete="off" type="number" min="0" id="${totalId}" value="${esc(d[totalKey]||'')}" placeholder="Total" style="width:100%"></div>`;
-    } else {
-      control = `<input class="fx-input" autocomplete="off" id="${id}" value="${esc(val||'')}">`;
-    }
-    return `<div class="fx-form-full">${label}${control}</div>`;
-  }
-
-  function fxTplFieldValue(field) {
-    const id = fxFieldInputId(field.key);
-    if (field.type === 'image') {
-      return {
-        _images: true,
-        ...fxImageVariantsValue(id)
-      };
-    }
-    if (field.type === 'multiselect') {
-      const box = document.getElementById(id);
-      return box ? Array.from(box.querySelectorAll('input:checked')).map(c => c.value) : [];
-    }
-    if (field.type === 'progress') {
-      const totalKey = field.totalKey || (field.key + 'Total');
-      const curEl = document.getElementById(id);
-      const totEl = document.getElementById(fxFieldInputId(totalKey));
-      return {
-        _progress: true,
-        current: curEl ? curEl.value.trim() : '',
-        total: totEl ? totEl.value.trim() : '',
-        totalKey
-      };
-    }
-    const el = document.getElementById(id);
-    return el ? el.value.trim() : '';
-  }
 
   /* ---------- Forms (add / edit) ---------- */
-  function fxFormFieldsHtml(catalog, d) {
-    const tpl = fxTemplateFor(catalog);
-    let extra = '';
-    // Único caso que não cabe no molde genérico dos templates: o vínculo
-    // relacional de Conteúdos com um item de Assistidos/Jogados.
-    if (catalog === 'content') {
-      const linkOpts = [...state.watched.map(i => ({
-        ...i,
-        cat: 'watched'
-      })), ...state.games.map(i => ({
-        ...i,
-        cat: 'games'
-      }))];
-      extra = `<div class="fx-form-full"><label class="fx-field-label">Vincular a Assistido / Jogado (opcional)</label>
-                <select class="fx-select" id="f-link-ref" style="width:100%">
-                  <option value="">Nenhum</option>
-                  ${linkOpts.map(i => `<option value="${i.cat}|${i.id}"${(d.linkCat===i.cat&&d.linkId===i.id)?' selected':''}>${i.cat==='watched'?'Assistido':'Jogado'}  ${esc(i.title)}</option>`).join('')}
-                </select>
-              </div>`;
-    }
-    return `<div class="fx-form-grid">${tpl.fields.map(f=>fxTplFieldHtml(f,d)).join('')}${extra}</div>`;
-  }
 
-  function fxAddPlatformToForm() {
-    const input = document.getElementById('f-new-platform');
-    const name = input.value.trim();
-    if (!name) return;
-    if (!state.platforms.includes(name)) {
-      state.platforms.push(name);
-      fxSave('platforms');
-      fxRenderPlatformFilter();
-    }
-    const list = document.getElementById('f-platforms');
-    const label = document.createElement('label');
-    label.className = 'fx-platform-check';
-    label.innerHTML = `<input type="checkbox" value="${esc(name)}" checked>${esc(name)}`;
-    list.appendChild(label);
-    input.value = '';
-  }
 
-  function fxOpenForm(catalog, id) {
-    const d = id ? fxCatalogById(catalog, id) : {};
-    const tpl = fxTemplateFor(catalog);
-    fxOpenModal(`<div class="fx-modal-body">
-              <h3 class="fx-modal-title">${id ? 'Editar' : 'Novo'} ${esc((tpl.label||catalog).toLowerCase())}</h3>
-              ${fxFormFieldsHtml(catalog, d)}
-              <div class="fx-modal-actions">
-                <button class="fx-btn" onclick="fxSubmitForm('${catalog}','${id||''}')">Salvar</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Cancelar</button>
-              </div>
-            </div>`, id ? fxFakeFilename(catalog, d) : `novo_${catalog}.tmp`);
-  }
 
-  function fxCollectFormData(catalog, existingId) {
-    const tpl = fxTemplateFor(catalog);
-    const data = {
-      id: existingId || uid()
-    };
-    tpl.fields.forEach(field => {
-      const v = fxTplFieldValue(field);
-      if (v && v._progress) {
-        data[field.key] = v.current;
-        data[v.totalKey] = v.total;
-      } else if (v && v._images) {
-        data[field.key] = {
-          vertical: v.vertical,
-          horizontal: v.horizontal,
-          square: v.square
-        };
-      } else {
-        data[field.key] = v;
-      }
-    });
-    if (catalog === 'content') {
-      const linkRef = (document.getElementById('f-link-ref') || {}).value || '';
-      let linkCat = '',
-        linkId = '';
-      if (linkRef.includes('|')) [linkCat, linkId] = linkRef.split('|');
-      data.linkCat = linkCat;
-      data.linkId = linkId;
-    }
-    return data;
-  }
 
-  function fxSubmitForm(catalog, id) {
-    const data = fxCollectFormData(catalog, id || null);
-    if (!data.title) return;
-    const arr = state[catalog];
-    const idx = arr.findIndex(i => i.id === data.id);
-    if (idx >= 0) arr[idx] = data;
-    else arr.unshift(data);
-    fxSave(catalog);
-    fxRenderGrid(catalog);
-    if (catalog !== 'content') fxRenderSchedule();
-    fxCloseModal();
-  }
 
-  function fxConfirmDeleteItem(catalog, id) {
-    const item = fxCatalogById(catalog, id);
-    const inSchedule = (state.schedule || []).some(s => s.catalog === catalog && s.refId === id);
-    fxConfirmAction(
-      `Excluir "${(item && item.title) || 'item'}"?`,
-      `Essa ação não pode ser desfeita.${inSchedule ? ' Também some de qualquer transmissão agendada com ele.' : ''}`,
-      'Sim, excluir',
-      `fxDeleteItem('${catalog}','${id}')`
-    );
-  }
 
-  function fxDeleteItem(catalog, id) {
-    state[catalog] = state[catalog].filter(i => i.id !== id);
-    state.schedule = state.schedule.filter(s => !(s.catalog === catalog && s.refId === id));
-    fxSave(catalog);
-    fxSave('schedule');
-    fxRenderGrid(catalog);
-    fxRenderSchedule();
-    fxCloseModal();
-  }
 
   /* ---------- Detail modal ---------- */
-  function fxOpenDetail(catalog, id, scheduleEntryId) {
-    const d = fxCatalogById(catalog, id);
-    if (!d) return;
-    const tpl = fxTemplateFor(catalog);
-    const heroImg = fxImgTag(fxPickImage(d.image, 'horizontal'), '', 'fx-modal-hero-noimg');
-
-    const tagsParts = [];
-    if (catalog === 'sponsored') tagsParts.push(fxBadge('Em breve', '#E0A83E'));
-    let sinopseBlock = '',
-      progressHtml = '',
-      linkHtml = '',
-      special = '';
-
-    tpl.fields.forEach(field => {
-      if (field.key === 'title' || field.key === 'image') return;
-      const val = d[field.key];
-      if (field.type === 'select') {
-        if (val) tagsParts.push(field.plain ? `<span>${esc(val)}</span>` : fxBadge(val, STATUS_COLORS[val] ||
-          fxPlatformColor(val)));
-      } else if (field.type === 'multiselect') {
-        if (Array.isArray(val) && val.length) tagsParts.push(val.map(v => fxBadge(v, fxPlatformColor(v))).join(''));
-      } else if (field.type === 'text') {
-        if (val) tagsParts.push(`<span>${esc(val)}</span>`);
-      } else if (field.type === 'link') {
-        if (val) linkHtml +=
-          `<a class="fx-modal-link" href="${esc(val)}" target="_blank" rel="noopener">${ICON.ext} ${esc(field.label)}</a><br>`;
-      } else if (field.type === 'progress') {
-        const totalKey = field.totalKey || (field.key + 'Total');
-        const total = +d[totalKey] || 0;
-        if (total) {
-          const cur = +val || 0;
-          const pct = Math.min(100, Math.round((cur / total) * 100));
-          progressHtml += `<div class="fx-progress-card">
-                    <div class="fx-progress-top"><span class="fx-progress-label">${esc(field.label)}</span><span class="fx-progress-pct">${pct}%</span></div>
-                    <div class="fx-progress-val" style="margin-bottom:8px">${cur} / ${total}</div>
-                    <div class="fx-progress-bar"><div class="fx-progress-fill" style="width:${pct}%"></div></div>
-                  </div>`;
-        }
-      } else if (field.type === 'textarea') {
-        if (val) {
-          const icon = field.key === 'notes' ? ICON.note + ' ' : '';
-          sinopseBlock =
-            `<div class="fx-modal-sinopse-label">${icon}${esc(field.label)}</div><div class="fx-modal-sinopse">${esc(val)}</div>`;
-        }
-      }
-    });
-
-    if (catalog === 'sponsored' && d.sponsor) {
-      special += `<div class="fx-sponsor-pill">Patrocinado por <b>${esc(d.sponsor)}</b></div>`;
-    }
-    if (catalog === 'content' && d.linkCat && d.linkId) {
-      const ref = fxCatalogById(d.linkCat, d.linkId);
-      if (ref) special += `<div class="fx-linked-ref" onclick="fxOpenDetail('${d.linkCat}','${ref.id}')">
-                ${fxImgTag(fxPickImage(ref.image, 'vertical'), '', 'fx-linked-ref-noimg')}
-                <div><div class="fx-linked-ref-name">${esc(ref.title)}</div><div class="fx-linked-ref-type">${d.linkCat==='watched'?'Assistido':'Jogado'}</div></div>
-              </div>`;
-    }
-
-    const tags = tagsParts.join('<span class="fx-modal-meta-sep"></span>');
-    const extra = special + progressHtml + linkHtml;
-
-    let actionsHtml = '';
-    if (fxIsAdmin()) {
-      if (scheduleEntryId) {
-        // Aberto a partir de um card do Cronograma: as ações principais são editar o
-        // card em si, editar horário/links da transmissão, ou só tirar da agenda —
-        // sem apagar o item de Assistidos/Jogados/Patrocinados/cards padrão. Excluir
-        // de vez fica à parte, menor e separado, pra não ser clicado sem querer.
-        actionsHtml =
-          `<div class="fx-modal-actions">
-                  <button class="fx-btn-ghost fx-btn" onclick="fxOpenForm('${catalog}','${d.id}')">${ICON.edit} Editar card</button>
-                  <button class="fx-btn-ghost fx-btn" onclick="fxOpenSchedEntryForm('${scheduleEntryId}')">${ICON.clock} Editar horário/links</button>
-                  <button class="fx-btn-danger fx-btn" onclick="fxRemoveScheduleGuarded('${scheduleEntryId}', true)">${ICON.x} Remover da agenda</button>
-                </div>
-                <button class="fx-modal-danger-link" onclick="fxConfirmDeleteItem('${catalog}','${d.id}')">Excluir ${esc(d.title)} definitivamente${catalog==='quick'?' (some da biblioteca de cards padrão)':' (de todas as abas)'}</button>`;
-      } else {
-        actionsHtml = `<div class="fx-modal-actions">
-                  <button class="fx-btn-ghost fx-btn" onclick="fxOpenForm('${catalog}','${d.id}')">${ICON.edit} Editar</button>
-                  <button class="fx-btn-danger fx-btn" onclick="fxConfirmDeleteItem('${catalog}','${d.id}')">${ICON.trash} Remover</button>
-                </div>`;
-      }
-    }
-
-    fxOpenModal(`<div class="fx-modal-hero">${heroImg}<button class="fx-modal-close" onclick="fxCloseModal()">${ICON.x}</button></div>
-              <div class="fx-modal-body">
-                <h3 class="fx-modal-title">${esc(d.title)}</h3>
-                <div class="fx-modal-tags">${tags}</div>
-                ${extra}
-                ${sinopseBlock}
-                ${actionsHtml}
-              </div>`, fxFakeFilename(catalog, d));
-  }
 
   /* ---------- Gerenciador de templates (admin) ---------- */
-  let fxTplEditingCatalog = null;
 
-  function fxOpenTemplateManager() {
-    const cats = ['sponsored', 'watched', 'games', 'content', 'quick', ...fxCustomTabIds()];
-    const rows = cats.map(cat => {
-      const tpl = fxTemplateFor(cat);
-      return `<button class="fx-tpl-row" onclick="fxOpenTemplateEditor('${cat}')">
-                <span>${esc(tpl.label || cat)}</span>
-                <span class="fx-tpl-row-count">${tpl.fields.length} campo${tpl.fields.length===1?'':'s'}</span>
-              </button>`;
-    }).join('');
-    fxOpenModal(`<div class="fx-modal-body">
-              <h3 class="fx-modal-title">Templates de card</h3>
-              <p class="fx-modal-sinopse" style="margin-bottom:14px">Escolha o catálogo pra mudar os campos do formulário de adicionar/editar e do card de detalhe.</p>
-              <div class="fx-tpl-list">${rows}</div>
-              <div class="fx-modal-actions">
-                <button class="fx-btn-ghost fx-btn" onclick="fxOpenAdminPanel()">Voltar</button>
-              </div>
-            </div>`, 'templates.cfg');
-  }
 
-  function fxTemplateEditorHtml(catalog) {
-    const tpl = fxTemplateFor(catalog);
-    const rows = tpl.fields.map((f, i) => {
-      const showOptions = (f.type === 'select' || f.type === 'multiselect') && !f.optionsFrom;
-      return `<div class="fx-tpl-field-row">
-                <div class="fx-tpl-field-top">
-                  <input class="fx-input fx-tpl-field-label" autocomplete="off" value="${esc(f.label)}" onchange="fxTplUpdateField(${i},'label',this.value)">
-                  <span class="fx-tpl-field-type">${esc(FX_FIELD_TYPES[f.type]||f.type)}</span>
-                  <button class="fx-tpl-move-btn" title="Mover pra cima" ${i===0?'disabled':''} onclick="fxTplMoveField(${i},-1)">${ICON.chevronLeft}</button>
-                  <button class="fx-tpl-move-btn" title="Mover pra baixo" ${i===tpl.fields.length-1?'disabled':''} onclick="fxTplMoveField(${i},1)">${ICON.chevronRight}</button>
-                  ${f.core ? '<span class="fx-tpl-field-locked" title="Campo fixo — usado em outras partes do site">'+ICON.lock+'</span>' : `<button class="fx-tpl-remove-btn" title="Remover campo" onclick="fxTplRemoveField(${i})">${ICON.x}</button>`}
-                </div>
-                ${showOptions ? `<input class="fx-input" autocomplete="off" style="width:100%;margin-top:6px" value="${esc((f.options||[]).join(', '))}" placeholder="Opções separadas por vírgula" onchange="fxTplUpdateField(${i},'options',this.value.split(',').map(s=>s.trim()).filter(Boolean))">` : ''}
-              </div>`;
-    }).join('');
 
-    return `<div class="fx-modal-body">
-              <h3 class="fx-modal-title">Template — ${esc(tpl.label||catalog)}</h3>
-              <p class="fx-modal-sinopse" style="margin-bottom:14px">Renomeie campos, mude a ordem com as setas, ou adicione campos novos. Os marcados com ${ICON.lock} ficam fixos porque o resto do site depende deles — mas o nome dá pra mudar.</p>
-              <div class="fx-tpl-field-list">${rows}</div>
-              <div class="fx-tpl-add-row">
-                <select class="fx-select" id="tpl-new-type">${Object.keys(FX_FIELD_TYPES).map(t=>`<option value="${t}">${esc(FX_FIELD_TYPES[t])}</option>`).join('')}</select>
-                <input class="fx-input" autocomplete="off" id="tpl-new-label" placeholder="Nome do campo novo" style="flex:1">
-                <button class="fx-btn fx-btn-sm" onclick="fxTplAddField()">+ Campo</button>
-              </div>
-              <div class="fx-modal-actions">
-                <button class="fx-btn" onclick="fxTplSaveAndClose()">Salvar e fechar</button>
-                <button class="fx-btn-ghost fx-btn" onclick="fxOpenTemplateManager()">Voltar</button>
-              </div>
-            </div>`;
-  }
 
-  function fxOpenTemplateEditor(catalog) {
-    fxTplEditingCatalog = catalog;
-    fxOpenModal(fxTemplateEditorHtml(catalog), 'template.cfg');
-  }
 
-  function fxRefreshTemplateEditor() {
-    const modal = document.getElementById('fx-modal');
-    if (modal) modal.innerHTML = fxTemplateEditorHtml(fxTplEditingCatalog);
-  }
 
-  function fxTplUpdateField(index, prop, value) {
-    const tpl = fxTemplateFor(fxTplEditingCatalog);
-    if (!tpl.fields[index]) return;
-    tpl.fields[index][prop] = value;
-    fxRefreshTemplateEditor();
-  }
 
-  function fxTplMoveField(index, dir) {
-    const tpl = fxTemplateFor(fxTplEditingCatalog);
-    const dest = index + dir;
-    if (dest < 0 || dest >= tpl.fields.length) return;
-    const [f] = tpl.fields.splice(index, 1);
-    tpl.fields.splice(dest, 0, f);
-    fxRefreshTemplateEditor();
-  }
 
-  function fxTplRemoveField(index) {
-    const tpl = fxTemplateFor(fxTplEditingCatalog);
-    if (!tpl.fields[index] || tpl.fields[index].core) return;
-    tpl.fields.splice(index, 1);
-    fxRefreshTemplateEditor();
-  }
 
-  function fxTplSlugKey(label, existingKeys) {
-    let base = label.toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'campo';
-    const taken = existingKeys.concat(['id', 'catalog']);
-    let key = base,
-      n = 2;
-    while (taken.includes(key)) key = base + '_' + (n++);
-    return key;
-  }
 
-  function fxTplAddField() {
-    const type = document.getElementById('tpl-new-type').value;
-    const label = document.getElementById('tpl-new-label').value.trim();
-    if (!label) return;
-    const tpl = fxTemplateFor(fxTplEditingCatalog);
-    const field = {
-      key: fxTplSlugKey(label, tpl.fields.map(f => f.key)),
-      type,
-      label
-    };
-    if (type === 'select' || type === 'multiselect') field.options = [];
-    if (type === 'progress') field.totalKey = field.key + 'Total';
-    tpl.fields.push(field);
-    fxRefreshTemplateEditor();
-  }
-
-  function fxTplSaveAndClose() {
-    fxSave('templates');
-    fxRenderWatchedFilters();
-    fxRenderGamesFilters();
-    fxCloseModal();
-  }
 
   /** Mostra um estado de carregamento sutil assim que a página abre, antes dos
       dados chegarem do Supabase — evita a sensação de "site vazio" por um instante. */
   function fxShowInitialLoading() {
     const loadingHtml = '<div class="fx-empty">Carregando…</div>';
-    ['grid-sponsored', 'grid-watched', 'grid-games', 'grid-content'].forEach(id => {
+    ['grid-games'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = loadingHtml;
     });
