@@ -2018,7 +2018,28 @@
     text-align: center;
     display: block;
   }
-  </style>
+  
+  /* ---- Correções: capa quadrada, botões da agenda, selos de status, linha do dia ---- */
+  .fx-sched-thumb { flex: 0 0 240px; width: 240px; max-width: 100%; min-width: 0; }
+  .fx-sched-thumb .fx-daycard { width: 100%; }
+  .fx-sched-thumb .fx-daycard-imgwrap { aspect-ratio: 1 / 1; height: auto; width: 100%; }
+  .fx-sched-thumb-actions { top: 8px; right: 8px; z-index: 5; }
+  @media (max-width: 640px) { .fx-sched-thumb { flex-basis: auto; width: 100%; } }
+  .fx-badge { border: 1px solid rgba(0, 0, 0, 0.55); box-shadow: 0 1px 5px rgba(0, 0, 0, 0.7); font-size: 10px; padding: 3px 8px; letter-spacing: 0.05em; }
+  .fx-card-badge-top { top: auto !important; bottom: 8px !important; left: 8px !important; right: auto !important; z-index: 3; }
+  .fx-daycard-tag { top: auto; bottom: 8px; left: 8px; z-index: 3; font-size: 10px; padding: 3px 8px; border-color: rgba(0, 0, 0, 0.55); box-shadow: 0 1px 5px rgba(0, 0, 0, 0.7); letter-spacing: 0.05em; }
+  .fx-lineup { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+  .fx-lineup-item { display: flex; gap: 10px; align-items: center; min-width: 0; }
+  .fx-lineup-item.is-past { opacity: 0.45; }
+  .fx-lineup-item.is-now .fx-lineup-time { color: var(--accent); }
+  .fx-lineup-item.sz-vertical { flex-direction: column; align-items: flex-start; gap: 6px; width: 92px; }
+  .fx-lineup-img { object-fit: cover; background: var(--surface-2); border: 1px solid var(--border); flex-shrink: 0; display: block; }
+  .fx-lineup-item.sz-square .fx-lineup-img { width: 84px; height: 84px; }
+  .fx-lineup-item.sz-vertical .fx-lineup-img { width: 92px; aspect-ratio: 187/260; height: auto; }
+  .fx-lineup-time { font-size: 11px; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .fx-lineup-title { font-size: 13px; font-weight: 700; line-height: 1.25; max-width: 150px; }
+  .fx-lineup-item.sz-vertical .fx-lineup-title { font-size: 11.5px; max-width: 92px; }
+</style>
 
   <div class="fx">
     <header class="fx-header">
@@ -2204,12 +2225,12 @@
     'Incompleto': '#E0A83E',
     'Pausado': '#8C7060',
     'Quero assistir': '#8C7060',
-    'Zerado': '#8FBF6F',
-    'Jogando': '#7FA8C9',
-    'Jogado': '#8C7060',
+    'Zerado': '#E8B93C',
+    'Jogando': '#4CAF6A',
+    'Jogado': '#4F9BD9',
     'Backlog': '#8C7060',
-    'Planejado': '#B58CC9',
-    'Abandonado': '#D65B4A',
+    'Planejado': '#A98BE0',
+    'Abandonado': '#D8584A',
     'Ideia': '#8C7060',
     'Em breve': '#E0A83E',
     'Gravado': '#7FA8C9',
@@ -2974,8 +2995,16 @@
   }
 
 
+  /** Selos de status com fundo sólido e texto de alto contraste: legíveis sobre qualquer capa.
+      Zerado = dourado (concluído), Jogando = verde (ativo), Jogado = azul, Planejado = roxo, Abandonado = vermelho. */
+  const FX_STATUS_STYLE = { 'Zerado': ['#E8B93C', '#1A1210'], 'Jogando': ['#4CAF6A', '#0E1A12'], 'Jogado': ['#4F9BD9', '#0A1624'],
+    'Planejado': ['#A98BE0', '#1A1030'], 'Abandonado': ['#D8584A', '#FFFFFF'] };
+  function fxStatusStyle(text, fallback) {
+    const st = FX_STATUS_STYLE[text];
+    return `background:${st ? st[0] : (fallback || '#8C7060')};color:${st ? st[1] : '#1A1210'}`;
+  }
   function fxBadge(text, color) {
-    return `<span class="fx-badge" style="background:${color}22;color:${color}">${esc(text)}</span>`;
+    return `<span class="fx-badge" style="${fxStatusStyle(text, color)}">${esc(text)}</span>`;
   }
 
   /* ---------- Grids ---------- */
@@ -3377,7 +3406,7 @@
         <div style="margin-bottom:8px">${fxGameBadges(g)}</div>
         ${rel ? `<p class="fx-modal-sinopse" style="margin:4px 0"><b>Lançamento:</b> ${esc(rel)}</p>` : ''}
         ${line('Gêneros', g.genres)}${line('Temas', g.themes)}${line('Plataformas', g.platforms)}${line('Modos', g.modes)}
-        ${g.synopsis ? `<div class="fx-modal-sinopse-label">Sinopse</div><div class="fx-modal-sinopse">${esc(g.synopsis)}</div>${g.synopsisSource === 'igdb-en' ? '<p style="font-size:11px;color:var(--text-3)">Texto original da IGDB, em inglês (não traduzido).</p>' : ''}` : ''}
+        ${g.synopsis ? `<div class="fx-modal-sinopse-label">Sinopse</div><div class="fx-modal-sinopse">${esc(g.synopsis)}</div>${g.synopsisSource === 'igdb-en' ? '<p style="font-size:11px;color:var(--text-3)">Texto original da IGDB, em inglês (não traduzido).</p>' : (g.synopsisSource === 'igdb-pt-auto' ? '<p style="font-size:11px;color:var(--text-3)">Tradução automática do texto da IGDB — pode conter erros.</p>' : '')}` : ''}
         <div class="fx-modal-actions">${admin}<button class="fx-btn-ghost fx-btn" onclick="fxCloseModal()">Fechar</button></div>
       </div>`, 'jogo.dat');
   }
@@ -3440,9 +3469,47 @@
     const el = document.getElementById('g-msg');
     if (el) { el.textContent = text || ''; el.style.color = isError ? 'var(--danger, #D65B4A)' : 'var(--text-3)'; }
   }
+  /** Tradução automática EN -> PT-BR pela API pública do MyMemory (chamada direta do navegador,
+      sem chave; limite gratuito de 5.000 caracteres/dia por IP e 500 bytes por pedido). Falha => lança. */
+  async function fxTranslateToPt(text) {
+    const parts = [];
+    let cur = '';
+    for (const sn of (String(text).replace(/\s+/g, ' ').match(/[^.!?]+[.!?]*\s*/g) || [String(text)])) {
+      if (cur && (cur + sn).length > 350) { parts.push(cur.trim()); cur = ''; }
+      if (sn.length > 350) { for (let i = 0; i < sn.length; i += 350) parts.push(sn.slice(i, i + 350)); } else cur += sn;
+    }
+    if (cur.trim()) parts.push(cur.trim());
+    const out = [];
+    for (const p of parts) {
+      const res = await fetch('https://api.mymemory.translated.net/get?' + new URLSearchParams({ q: p, langpair: 'en|pt-BR' }));
+      if (!res.ok) throw new Error('http');
+      const j = await res.json();
+      const t = j && j.responseData && j.responseData.translatedText;
+      if (String(j && j.responseStatus) !== '200' || !t || /MYMEMORY WARNING|QUERY LENGTH LIMIT|INVALID/i.test(t)) throw new Error('quota');
+      out.push(t);
+    }
+    return out.join(' ');
+  }
+
+  async function fxTranslateSynopsis(english) {
+    const el = document.getElementById('f-g-synopsis'), d = fxGameDraft, note = document.getElementById('g-syn-note');
+    if (!el || !d) return;
+    if (note) note.textContent = 'Traduzindo a sinopse para o português…';
+    try {
+      const pt = await fxTranslateToPt(english);
+      if (!document.getElementById('f-g-synopsis') || d.dirty.synopsis || el.value !== english) return; // você já mexeu no texto: não sobrescreve
+      el.value = pt;
+      d.synopsisSource = 'igdb-pt-auto';
+    } catch (e) {
+      if (document.getElementById('g-syn-note')) document.getElementById('g-syn-note').textContent = 'Não consegui traduzir agora (limite do serviço gratuito ou rede). Mantive o texto original em inglês.';
+      return;
+    }
+    fxGameSynNote();
+  }
+
   function fxGameSynNote() {
     const el = document.getElementById('g-syn-note');
-    if (el && fxGameDraft) el.textContent = fxGameDraft.synopsisSource === 'igdb-en' ? 'Texto original da IGDB, em inglês — não foi traduzido. Edite à vontade.' : '';
+    if (el && fxGameDraft) el.textContent = fxGameDraft.synopsisSource === 'igdb-en' ? 'Texto original da IGDB, em inglês — não foi traduzido. Edite à vontade.' : (fxGameDraft.synopsisSource === 'igdb-pt-auto' ? 'Tradução automática (MyMemory) do texto da IGDB — pode ter erros; revise.' : '');
   }
 
   function fxGameTitleSuggest(v) {
@@ -3496,7 +3563,7 @@
     put('release', 'f-g-release', g.releaseDate && g.releaseDate.value);
     if (g.summary) {
       const el = document.getElementById('f-g-synopsis');
-      if (!d.dirty.synopsis || !el.value.trim() || force) { el.value = g.summary; d.synopsisSource = 'igdb-en'; d.dirty.synopsis = false; fxGameSynNote(); } else skipped.push('synopsis');
+      if (!d.dirty.synopsis || !el.value.trim() || force) { el.value = g.summary; d.synopsisSource = 'igdb-en'; d.dirty.synopsis = false; fxGameSynNote(); fxTranslateSynopsis(g.summary); } else skipped.push('synopsis');
     }
     d.igdbId = g.igdbId;
     d.igdbCover = g.cover ? g.cover.url : null;
@@ -3504,6 +3571,7 @@
     const note = skipped.length ? ` Mantive o que você editou (${skipped.length} campo(s)). <a href="#" onclick="fxApplyIgdbGame(${igdbId},true);return false">Sobrescrever com os dados da IGDB</a>` : '';
     document.getElementById('g-msg').innerHTML = `Dados da IGDB aplicados. Revise antes de salvar.${note}`;
     document.getElementById('g-search').style.display = 'none';
+    fxAutoArt(g.name);
   }
 
   /* ----- SteamGridDB: escolher artes ----- */
@@ -3519,19 +3587,43 @@
       `<button class="fx-btn fx-btn-ghost fx-btn-sm" style="margin:0 6px 6px 0" onclick="fxLoadArt(${x.id})">${esc(x.name)}${x.releaseYear ? ' (' + x.releaseYear + ')' : ''}</button>`).join('');
   }
 
-  async function fxLoadArt(sgdbId) {
+  /** Ao escolher um jogo na busca, já carrega as artes do SteamGridDB (sem precisar clicar). */
+  async function fxAutoArt(name) {
+    const box = document.getElementById('g-art');
+    if (!box) return;
+    box.innerHTML = '<p style="font-size:12px">Carregando artes do SteamGridDB…</p>';
+    const r = await fxGameApi('sgdb_search', { query: name });
+    if (!document.getElementById('g-art')) return;
+    if (!r.ok) { box.innerHTML = `<p style="font-size:12px;color:#D65B4A">${esc(r.message)}</p>`; return; }
+    if (!r.results.length) { box.innerHTML = '<p style="font-size:12px">Nenhuma arte encontrada no SteamGridDB. Use uma URL ou envie um arquivo.</p>'; return; }
+    const n = fxNorm(name);
+    await fxLoadArt((r.results.find(x => fxNorm(x.name) === n) || r.results[0]).id, true);
+  }
+
+  async function fxLoadArt(sgdbId, autoFill) {
     const box = document.getElementById('g-art');
     box.innerHTML = '<p style="font-size:12px">Carregando artes…</p>';
     const r = await fxGameApi('sgdb_images', { gameId: sgdbId });
     if (!r.ok) { box.innerHTML = `<p style="font-size:12px;color:#D65B4A">${esc(r.message)}</p>`; return; }
+    if (!document.getElementById('g-art') || !fxGameDraft) return;
     fxGameDraft.sgdbId = sgdbId;
+    let filled = 0;
+    if (autoFill) {
+      Object.keys(r.formats).forEach(k => {
+        const inp = document.getElementById('f-g-img-' + k), f = r.formats[k];
+        if (!inp || inp.value.trim() || !f.available) return; // só preenche campos vazios
+        inp.value = f.items.slice().sort((a, b) => (b.score || 0) - (a.score || 0))[0].url; filled++;
+      });
+      const v = document.getElementById('f-g-img-vertical');
+      if (v && !v.value.trim() && fxGameDraft.igdbCover) { v.value = fxGameDraft.igdbCover; filled++; }
+    }
     const names = { vertical: 'Vertical (~2:3)', horizontal: 'Horizontal (~2,1:1)', square: 'Quadrada (1:1)' };
     box.innerHTML = Object.keys(names).map(k => {
       const f = r.formats[k];
       const body = f && f.available ? f.items.slice(0, 12).map(i => `<button type="button" class="fx-btn-ghost" style="padding:2px;margin:0 6px 6px 0;border:1px solid var(--border,#444);background:none;cursor:pointer" aria-label="Usar esta arte ${k}" onclick="fxUseArt('${k}','${esc(i.url)}')"><img src="${esc(i.thumb)}" alt="" style="height:${k === 'vertical' ? 110 : 64}px;display:block"></button>`).join('')
         : '<span style="font-size:12px;opacity:.7">Sem arte disponível neste formato.</span>';
       return `<div style="margin-bottom:8px"><div class="fx-image-variant-label">${names[k]}</div>${body}</div>`;
-    }).join('') + '<p style="font-size:11px;color:var(--text-3)">As proporções do SteamGridDB não são exatamente 9:16 / 16:9; o site recorta para caber.</p>';
+    }).join('') + `<p style="font-size:11px;color:var(--text-3)">${filled ? 'Preenchi automaticamente os formatos vazios com a arte mais bem avaliada — clique em outra para trocar. ' : ''}As proporções do SteamGridDB não são exatamente 9:16 / 16:9; o site recorta para caber.</p>`;
   }
 
   function fxUseArt(format, url) {
@@ -3715,14 +3807,49 @@
     }
     const dayName = target.toLocaleDateString('pt-BR', { timeZone: FX_TZ, weekday: 'long' });
     const timeStr = target.toLocaleTimeString('pt-BR', { timeZone: FX_TZ, hour: '2-digit', minute: '2-digit' });
+    const lineup = fxHeroLineup(entry);
+    const dot = `<span class="fx-hero-dot${confirmedLive ? ' fx-hero-dot-live' : ''}"></span>`;
+    const dayLabel = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+    if (lineup.length > 1) {
+      // Vários jogos no mesmo dia: mostra a programação inteira. O início do próximo jogo é o fim do anterior;
+      // o último usa o término cadastrado (se houver). 2-3 jogos => capas quadradas; 4 ou mais => verticais.
+      const fmt = lineup.length >= 4 ? 'vertical' : 'square';
+      const items = lineup.map((x, i) => {
+        const g = fxCatalogById(x.catalog, x.refId);
+        const end = lineup[i + 1] ? lineup[i + 1].datetime : x.endDatetime;
+        const cls = x.id === entry.id ? ' is-now' : (fxSchedStatus(x) === 'past' ? ' is-past' : '');
+        return `<div class="fx-lineup-item sz-${fmt}${cls}">${fxImgTag(fxPickImage(g.image, fmt), 'fx-lineup-img', 'fx-lineup-img')}
+          <div><div class="fx-lineup-time">${fxHM(x.datetime)}${end ? ' – ' + fxHM(end) : ''}</div><div class="fx-lineup-title">${esc(g.title)}</div></div></div>`;
+      }).join('');
+      el.innerHTML = `${winbar}<div class="fx-hero-content">
+        <div class="fx-hero-mid" style="flex:3 1 340px">
+          <div class="fx-hero-eyebrow">${dot}${eyebrow} · ${lineup.length} jogos</div>
+          <div class="fx-hero-time">${ICON.clock} ${dayLabel} · ${fxHM(lineup[0].datetime)}</div>
+          <div class="fx-lineup">${items}</div>
+        </div>${rightHtml}</div>`;
+      return;
+    }
     const img = fxPickImage(game.image, 'horizontal');
     el.innerHTML = `${winbar}<div class="fx-hero-content">
       ${fxImgTag(img, 'fx-hero-img pick-horizontal', 'fx-hero-img fx-hero-noimg pick-horizontal')}
       <div class="fx-hero-mid">
-        <div class="fx-hero-eyebrow"><span class="fx-hero-dot${confirmedLive ? ' fx-hero-dot-live' : ''}"></span>${eyebrow}</div>
+        <div class="fx-hero-eyebrow">${dot}${eyebrow}</div>
         <div class="fx-hero-title">${esc(game.title)}</div>
-        <div class="fx-hero-time">${ICON.clock} ${dayName.charAt(0).toUpperCase() + dayName.slice(1)} às ${timeStr}</div>
+        <div class="fx-hero-time">${ICON.clock} ${dayLabel} às ${timeStr}</div>
       </div>${rightHtml}</div>`;
+  }
+
+  /** HH:mm em horário de Brasília. */
+  function fxHM(iso) {
+    return new Date(iso).toLocaleTimeString('pt-BR', { timeZone: FX_TZ, hour: '2-digit', minute: '2-digit' });
+  }
+
+  /** Todas as transmissões do mesmo dia (em Brasília) da transmissão em destaque, em ordem de horário. */
+  function fxHeroLineup(entry) {
+    const day = fxIsoToInput(entry.datetime).slice(0, 10);
+    return (state.schedule || [])
+      .filter(x => fxCatalogById(x.catalog, x.refId) && fxSchedStatus(x) !== 'invalid' && fxIsoToInput(x.datetime).slice(0, 10) === day)
+      .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
   }
 
   function fxOpenHeroPicker() {
@@ -3905,7 +4032,7 @@
                       <div class="fx-daycard-imgwrap">
                         ${fxImgTag(fxPickImage(item.image, 'square'), 'fx-daycard-img', 'fx-daycard-noimg')}
                         <div class="fx-daycard-gradient"></div>
-                        <span class="fx-daycard-tag" style="background:${tagColor}22;color:${tagColor}">${esc(tagText)}</span>
+                        <span class="fx-daycard-tag" style="${fxStatusStyle(item.status, tagColor)}">${esc(item.status || tagText)}</span>
                         ${adminBtns}
                       </div>
                     </div>
